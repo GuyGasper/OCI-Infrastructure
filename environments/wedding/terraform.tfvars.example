@@ -1,0 +1,5 @@
+region          = "us-chicago-1"
+compartment_id  = "ocid1.compartment.oc1..replace_me"
+state_bucket    = "terraform-state"
+state_namespace = "replace_me"
+# certificate_id = "ocid1.certificate.oc1.us-chicago-1.replace_me"

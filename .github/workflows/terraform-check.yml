@@ -1,0 +1,42 @@
+name: Terraform checks
+
+on:
+  pull_request:
+    paths:
+      - "**.tf"
+      - ".github/workflows/terraform-*.yml"
+  push:
+    branches: [main]
+    paths:
+      - "**.tf"
+      - ".github/workflows/terraform-*.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Format and validate
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.15.8
+
+      - name: Check formatting
+        run: terraform fmt -check -recursive
+
+      - name: Initialize shared without backend
+        run: terraform -chdir=environments/shared init -backend=false -input=false
+
+      - name: Validate shared
+        run: terraform -chdir=environments/shared validate
+
+      - name: Initialize wedding without backend
+        run: terraform -chdir=environments/wedding init -backend=false -input=false
+
+      - name: Validate wedding
+        run: terraform -chdir=environments/wedding validate

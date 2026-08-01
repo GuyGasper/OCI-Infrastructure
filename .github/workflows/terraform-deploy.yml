@@ -1,0 +1,96 @@
+name: Deploy OCI infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Apply the plans (clear this for plan only)"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: terraform-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Plan and optionally apply
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      TF_IN_AUTOMATION: "true"
+      TF_INPUT: "false"
+      TF_VAR_region: ${{ vars.OCI_REGION }}
+      TF_VAR_compartment_id: ${{ vars.OCI_COMPARTMENT_ID }}
+      TF_VAR_state_bucket: ${{ vars.TF_STATE_BUCKET }}
+      TF_VAR_state_namespace: ${{ vars.OCI_NAMESPACE }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.15.8
+
+      - name: Configure OCI API credentials
+        shell: bash
+        env:
+          OCI_TENANCY_OCID: ${{ secrets.OCI_TENANCY_OCID }}
+          OCI_USER_OCID: ${{ secrets.OCI_USER_OCID }}
+          OCI_FINGERPRINT: ${{ secrets.OCI_FINGERPRINT }}
+          OCI_PRIVATE_KEY: ${{ secrets.OCI_PRIVATE_KEY }}
+        run: |
+          install -d -m 0700 "$HOME/.oci"
+          printf '%s' "$OCI_PRIVATE_KEY" > "$HOME/.oci/oci_api_key.pem"
+          chmod 0600 "$HOME/.oci/oci_api_key.pem"
+          printf '%s\n' \
+            '[DEFAULT]' \
+            "user=$OCI_USER_OCID" \
+            "fingerprint=$OCI_FINGERPRINT" \
+            "tenancy=$OCI_TENANCY_OCID" \
+            "region=${{ vars.OCI_REGION }}" \
+            "key_file=$HOME/.oci/oci_api_key.pem" \
+            > "$HOME/.oci/config"
+          chmod 0600 "$HOME/.oci/config"
+
+      - name: Configure optional custom certificate
+        if: ${{ vars.OCI_CERTIFICATE_ID != '' }}
+        run: echo "TF_VAR_certificate_id=${{ vars.OCI_CERTIFICATE_ID }}" >> "$GITHUB_ENV"
+
+      - name: Initialize shared state
+        run: |
+          terraform -chdir=environments/shared init -reconfigure \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="namespace=${{ vars.OCI_NAMESPACE }}" \
+            -backend-config="region=${{ vars.OCI_REGION }}" \
+            -backend-config="key=shared/terraform.tfstate"
+
+      - name: Plan shared network
+        run: terraform -chdir=environments/shared plan -out=shared.tfplan
+
+      - name: Apply shared network
+        if: ${{ inputs.apply }}
+        run: terraform -chdir=environments/shared apply -auto-approve shared.tfplan
+
+      - name: Initialize wedding state
+        run: |
+          terraform -chdir=environments/wedding init -reconfigure \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="namespace=${{ vars.OCI_NAMESPACE }}" \
+            -backend-config="region=${{ vars.OCI_REGION }}" \
+            -backend-config="key=wedding/terraform.tfstate"
+
+      - name: Plan wedding site
+        run: terraform -chdir=environments/wedding plan -out=wedding.tfplan
+
+      - name: Apply wedding site
+        if: ${{ inputs.apply }}
+        run: terraform -chdir=environments/wedding apply -auto-approve wedding.tfplan
+
+      - name: Publish site URL
+        if: ${{ inputs.apply }}
+        run: echo "### $(terraform -chdir=environments/wedding output -raw site_url)" >> "$GITHUB_STEP_SUMMARY"
