@@ -128,6 +128,10 @@ Add these environment **variables**:
 The private key exists only on the ephemeral runner and is not committed or
 uploaded as an artifact.
 
+Do not create `OCI_CERTIFICATE_ID` with placeholder text. Delete/unset the
+variable until OCI has issued or imported the real certificate. When present,
+it must begin with `ocid1.certificate.` or `ocid1.apigatewaycertificate.`.
+
 ### Run the deployment
 
 1. Push the repository to GitHub.
@@ -143,6 +147,26 @@ uploaded as an artifact.
 Pull requests and pushes to `main` also run formatting and provider-schema
 validation without receiving OCI credentials. Applies are intentionally manual;
 there is no unattended apply on every push.
+
+### `BucketNotFound` during initialization
+
+The backend error intentionally combines "not found" and "not authorized" into
+the same 404 response. Check all of the following:
+
+1. The bucket name exactly matches `TF_STATE_BUCKET` (names are case-sensitive).
+2. The Console's selected region when viewing the bucket exactly matches
+   `OCI_REGION`. For example, a bucket created in `us-chicago-1` cannot be read
+   through a workflow configured for `us-ashburn-1`.
+3. `OCI_NAMESPACE` is the tenancy's Object Storage namespace, not the tenancy
+   name, bucket name, or compartment name.
+4. The policy granting `manage object-family` names the compartment that
+   actually contains the state bucket.
+5. The API-key user is a member of the group named by the policy. For a group in
+   a non-default identity domain, qualify it as `domain-name/group-name`, or use
+   the group OCID in the policy.
+
+The workflow prints these three non-secret backend coordinates immediately
+before `terraform init`, making a region/name mismatch visible in the log.
 
 ## 6. Connect `sg2027wedding.com`
 

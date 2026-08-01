@@ -20,7 +20,8 @@ resource "oci_objectstorage_object" "index" {
 }
 
 locals {
-  index_url = "https://objectstorage.${var.region}.oraclecloud.com/n/${data.oci_objectstorage_namespace.this.namespace}/b/${oci_objectstorage_bucket.site.name}/o/${oci_objectstorage_object.index.object}"
+  index_url      = "https://objectstorage.${var.region}.oraclecloud.com/n/${data.oci_objectstorage_namespace.this.namespace}/b/${oci_objectstorage_bucket.site.name}/o/${oci_objectstorage_object.index.object}"
+  certificate_id = try(trimspace(var.certificate_id), "") == "" ? null : trimspace(var.certificate_id)
 }
 
 resource "oci_apigateway_gateway" "site" {
@@ -29,7 +30,7 @@ resource "oci_apigateway_gateway" "site" {
   endpoint_type              = "PUBLIC"
   subnet_id                  = var.subnet_id
   network_security_group_ids = var.network_security_group_ids
-  certificate_id             = var.certificate_id
+  certificate_id             = local.certificate_id
 }
 
 resource "oci_apigateway_deployment" "site" {

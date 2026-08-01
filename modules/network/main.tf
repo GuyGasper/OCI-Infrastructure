@@ -24,6 +24,14 @@ resource "oci_core_route_table" "public" {
   }
 }
 
+# OCI requires every subnet to have at least one security list. Keep this list
+# intentionally empty and apply the gateway-specific rules through its NSG.
+resource "oci_core_security_list" "api_gateway_subnet" {
+  compartment_id = var.compartment_id
+  vcn_id         = oci_core_vcn.this.id
+  display_name   = "${var.name}-api-gateway-subnet-security-list"
+}
+
 resource "oci_core_subnet" "api_gateway" {
   compartment_id             = var.compartment_id
   vcn_id                     = oci_core_vcn.this.id
@@ -32,7 +40,7 @@ resource "oci_core_subnet" "api_gateway" {
   dns_label                  = "apigw"
   prohibit_public_ip_on_vnic = false
   route_table_id             = oci_core_route_table.public.id
-  security_list_ids          = []
+  security_list_ids          = [oci_core_security_list.api_gateway_subnet.id]
 }
 
 resource "oci_core_network_security_group" "api_gateway" {

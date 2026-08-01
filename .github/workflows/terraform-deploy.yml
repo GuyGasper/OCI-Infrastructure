@@ -30,9 +30,9 @@ jobs:
       TF_VAR_state_namespace: ${{ vars.OCI_NAMESPACE }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: 1.15.8
 
@@ -60,6 +60,16 @@ jobs:
       - name: Configure optional custom certificate
         if: ${{ vars.OCI_CERTIFICATE_ID != '' }}
         run: echo "TF_VAR_certificate_id=${{ vars.OCI_CERTIFICATE_ID }}" >> "$GITHUB_ENV"
+
+      - name: Show remote state target
+        run: |
+          test -n "${{ vars.TF_STATE_BUCKET }}" || { echo "TF_STATE_BUCKET is not set"; exit 1; }
+          test -n "${{ vars.OCI_NAMESPACE }}" || { echo "OCI_NAMESPACE is not set"; exit 1; }
+          test -n "${{ vars.OCI_REGION }}" || { echo "OCI_REGION is not set"; exit 1; }
+          printf 'State bucket: %s\nNamespace: %s\nRegion: %s\n' \
+            '${{ vars.TF_STATE_BUCKET }}' \
+            '${{ vars.OCI_NAMESPACE }}' \
+            '${{ vars.OCI_REGION }}'
 
       - name: Initialize shared state
         run: |
