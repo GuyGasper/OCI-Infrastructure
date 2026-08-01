@@ -103,4 +103,6 @@ jobs:
 
       - name: Publish site URL
         if: ${{ inputs.apply }}
-        run: echo "### $(terraform -chdir=environments/wedding output -raw site_url)" >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          echo "### $(terraform -chdir=environments/wedding output -raw site_url)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Gateway public IP: $(terraform -chdir=environments/wedding output -raw gateway_public_ip)" >> "$GITHUB_STEP_SUMMARY"

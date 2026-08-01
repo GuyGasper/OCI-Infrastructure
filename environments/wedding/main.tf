@@ -22,6 +22,7 @@ data "terraform_remote_state" "shared" {
 module "site" {
   source                     = "../../modules/static-site"
   name                       = "sg2027-wedding"
+  domain_name                = "sg2027wedding.com"
   compartment_id             = var.compartment_id
   region                     = var.region
   subnet_id                  = data.terraform_remote_state.shared.outputs.api_gateway_subnet_id

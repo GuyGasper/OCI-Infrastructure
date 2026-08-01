@@ -7,7 +7,7 @@ output "gateway_public_ip" {
 }
 
 output "site_url" {
-  value = "https://${oci_apigateway_gateway.site.hostname}/"
+  value = "https://${coalesce(var.domain_name, oci_apigateway_gateway.site.hostname)}/"
 }
 
 output "bucket_name" {
