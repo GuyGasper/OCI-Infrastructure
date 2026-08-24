@@ -13,6 +13,7 @@ Namecheap DNS, and the production hardening path.
 - `modules/static-site`: Object Storage object plus an API Gateway deployment.
 - `environments/shared`: account-level networking shared by multiple projects.
 - `environments/wedding`: resources owned by `sg2027wedding.com`.
+- `environments/personal-os`: independently deployed Personal OS placeholder.
 
-Each environment has separate Terraform state. A later `personal-os` environment
-can consume the shared subnet and NSG without coupling its lifecycle to the site.
+Each environment has separate Terraform state. Wedding and Personal OS consume
+the shared subnet and NSG without coupling their application lifecycles.

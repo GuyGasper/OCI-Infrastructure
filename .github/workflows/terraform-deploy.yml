@@ -3,6 +3,16 @@ name: Deploy OCI infrastructure
 on:
   workflow_dispatch:
     inputs:
+      target:
+        description: "Infrastructure target"
+        required: true
+        type: choice
+        default: personal-os
+        options:
+          - personal-os
+          - wedding
+          - shared
+          - all
       apply:
         description: "Apply the plans (clear this for plan only)"
         required: true
@@ -57,10 +67,6 @@ jobs:
             > "$HOME/.oci/config"
           chmod 0600 "$HOME/.oci/config"
 
-      - name: Configure optional custom certificate
-        if: ${{ vars.OCI_CERTIFICATE_ID != '' }}
-        run: echo "TF_VAR_certificate_id=${{ vars.OCI_CERTIFICATE_ID }}" >> "$GITHUB_ENV"
-
       - name: Show remote state target
         run: |
           test -n "${{ vars.TF_STATE_BUCKET }}" || { echo "TF_STATE_BUCKET is not set"; exit 1; }
@@ -72,6 +78,7 @@ jobs:
             '${{ vars.OCI_REGION }}'
 
       - name: Initialize shared state
+        if: ${{ inputs.target == 'shared' || inputs.target == 'all' }}
         run: |
           terraform -chdir=environments/shared init -reconfigure \
             -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
@@ -80,13 +87,15 @@ jobs:
             -backend-config="key=shared/terraform.tfstate"
 
       - name: Plan shared network
+        if: ${{ inputs.target == 'shared' || inputs.target == 'all' }}
         run: terraform -chdir=environments/shared plan -out=shared.tfplan
 
       - name: Apply shared network
-        if: ${{ inputs.apply }}
+        if: ${{ inputs.apply && (inputs.target == 'shared' || inputs.target == 'all') }}
         run: terraform -chdir=environments/shared apply -auto-approve shared.tfplan
 
       - name: Initialize wedding state
+        if: ${{ inputs.target == 'wedding' || inputs.target == 'all' }}
         run: |
           terraform -chdir=environments/wedding init -reconfigure \
             -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
@@ -95,14 +104,47 @@ jobs:
             -backend-config="key=wedding/terraform.tfstate"
 
       - name: Plan wedding site
+        if: ${{ inputs.target == 'wedding' || inputs.target == 'all' }}
+        env:
+          TF_VAR_certificate_id: ${{ vars.OCI_CERTIFICATE_ID }}
         run: terraform -chdir=environments/wedding plan -out=wedding.tfplan
 
       - name: Apply wedding site
-        if: ${{ inputs.apply }}
+        if: ${{ inputs.apply && (inputs.target == 'wedding' || inputs.target == 'all') }}
         run: terraform -chdir=environments/wedding apply -auto-approve wedding.tfplan
 
-      - name: Publish site URL
-        if: ${{ inputs.apply }}
+      - name: Publish wedding URL
+        if: ${{ inputs.apply && (inputs.target == 'wedding' || inputs.target == 'all') }}
         run: |
-          echo "### $(terraform -chdir=environments/wedding output -raw site_url)" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Wedding: $(terraform -chdir=environments/wedding output -raw site_url)" >> "$GITHUB_STEP_SUMMARY"
           echo "Gateway public IP: $(terraform -chdir=environments/wedding output -raw gateway_public_ip)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Check Personal OS configuration
+        if: ${{ inputs.target == 'personal-os' || inputs.target == 'all' }}
+        run: |
+          test -n "${{ vars.PERSONAL_OS_CERTIFICATE_ID }}" || { echo "PERSONAL_OS_CERTIFICATE_ID is not set"; exit 1; }
+
+      - name: Initialize Personal OS state
+        if: ${{ inputs.target == 'personal-os' || inputs.target == 'all' }}
+        run: |
+          terraform -chdir=environments/personal-os init -reconfigure \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="namespace=${{ vars.OCI_NAMESPACE }}" \
+            -backend-config="region=${{ vars.OCI_REGION }}" \
+            -backend-config="key=personal-os/terraform.tfstate"
+
+      - name: Plan Personal OS site
+        if: ${{ inputs.target == 'personal-os' || inputs.target == 'all' }}
+        env:
+          TF_VAR_certificate_id: ${{ vars.PERSONAL_OS_CERTIFICATE_ID }}
+        run: terraform -chdir=environments/personal-os plan -out=personal-os.tfplan
+
+      - name: Apply Personal OS site
+        if: ${{ inputs.apply && (inputs.target == 'personal-os' || inputs.target == 'all') }}
+        run: terraform -chdir=environments/personal-os apply -auto-approve personal-os.tfplan
+
+      - name: Publish Personal OS URL
+        if: ${{ inputs.apply && (inputs.target == 'personal-os' || inputs.target == 'all') }}
+        run: |
+          echo "### Personal OS: $(terraform -chdir=environments/personal-os output -raw site_url)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Gateway public IP: $(terraform -chdir=environments/personal-os output -raw gateway_public_ip)" >> "$GITHUB_STEP_SUMMARY"

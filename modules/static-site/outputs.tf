@@ -7,7 +7,7 @@ output "gateway_public_ip" {
 }
 
 output "site_url" {
-  value = "https://${coalesce(var.domain_name, oci_apigateway_gateway.site.hostname)}/"
+  value = local.certificate_id == null || var.domain_name == null ? "https://${oci_apigateway_gateway.site.hostname}/" : "https://${var.domain_name}/"
 }
 
 output "bucket_name" {

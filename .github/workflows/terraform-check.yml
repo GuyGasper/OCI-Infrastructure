@@ -40,3 +40,9 @@ jobs:
 
       - name: Validate wedding
         run: terraform -chdir=environments/wedding validate
+
+      - name: Initialize Personal OS without backend
+        run: terraform -chdir=environments/personal-os init -backend=false -input=false
+
+      - name: Validate Personal OS
+        run: terraform -chdir=environments/personal-os validate

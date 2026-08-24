@@ -199,5 +199,6 @@ hostname before adding the final A record avoids a certificate-name failure.
   generally a better fit for a multi-asset SPA; retain API Gateway for APIs.
 - Add budgets, logging, alarms, and a WAF/rate-limit policy before collecting
   RSVPs or other personal data.
-- Create a separate `environments/personal-os` root and private application
-  subnets. Do not put databases or internal APIs in this public gateway subnet.
+- The Personal OS root now exists for its public placeholder. Add private
+  application subnets before introducing databases or internal APIs; do not put
+  those workloads in this public gateway subnet.
