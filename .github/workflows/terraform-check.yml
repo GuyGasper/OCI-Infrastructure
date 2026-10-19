@@ -4,11 +4,19 @@ on:
   pull_request:
     paths:
       - "**.tf"
+      - "**.hcl"
+      - "**.tfvars.example"
+      - "kubernetes/personal-os/**"
+      - "scripts/render-personal-os.py"
       - ".github/workflows/terraform-*.yml"
   push:
     branches: [main]
     paths:
       - "**.tf"
+      - "**.hcl"
+      - "**.tfvars.example"
+      - "kubernetes/personal-os/**"
+      - "scripts/render-personal-os.py"
       - ".github/workflows/terraform-*.yml"
 
 permissions:
@@ -46,3 +54,15 @@ jobs:
 
       - name: Validate Personal OS
         run: terraform -chdir=environments/personal-os validate
+
+      - name: Render Personal OS Kubernetes manifests
+        shell: bash
+        run: |
+          tools_dir="$RUNNER_TEMP/personal-os-tools"
+          mkdir -p "$tools_dir"
+          curl -fsSLo "$tools_dir/kubectl" https://dl.k8s.io/release/v1.35.0/bin/linux/amd64/kubectl
+          curl -fsSLo "$tools_dir/kubectl.sha256" https://dl.k8s.io/release/v1.35.0/bin/linux/amd64/kubectl.sha256
+          echo "$(cat "$tools_dir/kubectl.sha256")  $tools_dir/kubectl" | sha256sum --check
+          chmod +x "$tools_dir/kubectl"
+          "$tools_dir/kubectl" kustomize kubernetes/personal-os > "$RUNNER_TEMP/personal-os-base.yaml"
+          python3 scripts/render-personal-os.py --help

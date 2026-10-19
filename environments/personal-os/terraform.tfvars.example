@@ -3,3 +3,15 @@ compartment_id  = "ocid1.compartment.oc1..replace_me"
 state_bucket    = "terraform-state"
 state_namespace = "replace_me"
 certificate_id  = "ocid1.apigatewaycertificate.oc1.us-ashburn-1.replace_me"
+
+# OKE development cluster (existing placeholder stays during verification).
+kubernetes_version  = "REPLACE_WITH_SUPPORTED_VERSION"
+node_image_id       = "ocid1.image.oc1.us-ashburn-1.replace_me"
+availability_domain = "REPLACE_WITH_AD_NAME"
+admin_cidrs         = ["203.0.113.10/32"] # Replace with your actual public IP.
+
+# ARM64; both application images must support linux/arm64.
+node_shape      = "VM.Standard.A1.Flex"
+node_ocpus      = 1
+node_memory_gbs = 6
+node_count      = 1

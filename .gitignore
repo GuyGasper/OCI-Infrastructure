@@ -3,5 +3,8 @@
 *.tfstate.*
 *.tfplan
 *.auto.tfvars
+terraform.tfvars
+terraform.tfvars.json
+.local/
 crash.log
 .DS_Store
