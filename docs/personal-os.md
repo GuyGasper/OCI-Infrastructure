@@ -77,7 +77,9 @@ oci iam availability-domain list --compartment-id <tenancy-ocid>
 ## Plan and provision
 
 Extend your existing `terraform.tfvars` from the example with the OKE inputs.
-Keep the placeholder's existing `certificate_id`. For local deployment:
+Retain `certificate_id` if the placeholder already has a certificate. Otherwise
+leave it unset; the placeholder will use its generated OCI hostname and default
+TLS certificate. For local deployment:
 
 ```bash
 cd environments/personal-os
@@ -105,7 +107,9 @@ For GitHub Actions, retain existing `production` secrets/variables and add:
 | `PERSONAL_OS_NODE_MEMORY_GBS` | Optional; default `6` |
 | `PERSONAL_OS_NODE_COUNT` | Optional; default `1` |
 
-Keep `PERSONAL_OS_CERTIFICATE_ID` for the placeholder. Run **Deploy OCI
+Keep `PERSONAL_OS_CERTIFICATE_ID` if the placeholder already has a certificate;
+otherwise leave that variable unset (do not use a fake OCID). It is optional and
+applies only to the placeholder gateway, not the OKE load balancer. Run **Deploy OCI
 infrastructure**, target `personal-os`, with apply disabled first. Review the
 plan; then run with apply enabled. This provisions infrastructure only; it does
 not build apps or apply Kubernetes manifests. Existing `site_url` and

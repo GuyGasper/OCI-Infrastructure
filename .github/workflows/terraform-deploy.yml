@@ -122,13 +122,12 @@ jobs:
       - name: Check Personal OS configuration
         if: ${{ inputs.target == 'personal-os' || inputs.target == 'all' }}
         env:
-          PERSONAL_OS_CERTIFICATE_ID: ${{ vars.PERSONAL_OS_CERTIFICATE_ID }}
           PERSONAL_OS_KUBERNETES_VERSION: ${{ vars.PERSONAL_OS_KUBERNETES_VERSION }}
           PERSONAL_OS_NODE_IMAGE_ID: ${{ vars.PERSONAL_OS_NODE_IMAGE_ID }}
           PERSONAL_OS_AVAILABILITY_DOMAIN: ${{ vars.PERSONAL_OS_AVAILABILITY_DOMAIN }}
           PERSONAL_OS_ADMIN_CIDRS: ${{ vars.PERSONAL_OS_ADMIN_CIDRS }}
         run: |
-          for name in PERSONAL_OS_CERTIFICATE_ID PERSONAL_OS_KUBERNETES_VERSION PERSONAL_OS_NODE_IMAGE_ID PERSONAL_OS_AVAILABILITY_DOMAIN PERSONAL_OS_ADMIN_CIDRS; do
+          for name in PERSONAL_OS_KUBERNETES_VERSION PERSONAL_OS_NODE_IMAGE_ID PERSONAL_OS_AVAILABILITY_DOMAIN PERSONAL_OS_ADMIN_CIDRS; do
             test -n "${!name}" || { echo "$name is not set"; exit 1; }
           done
 

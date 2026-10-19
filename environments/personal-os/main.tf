@@ -4,12 +4,17 @@ variable "state_bucket" { type = string }
 variable "state_namespace" { type = string }
 
 variable "certificate_id" {
-  description = "OCI certificate for domain_name and its www hostname."
+  description = "Optional placeholder gateway certificate. Leave unset to use its generated OCI hostname."
   type        = string
+  default     = null
+  nullable    = true
 
   validation {
-    condition     = can(regex("^ocid1\\.(certificate|apigatewaycertificate)\\.", trimspace(var.certificate_id)))
-    error_message = "certificate_id must be a valid OCI Certificates/API Gateway certificate OCID."
+    condition = var.certificate_id == null ? true : (
+      trimspace(var.certificate_id) == "" ||
+      can(regex("^ocid1\\.(certificate|apigatewaycertificate)\\.", trimspace(var.certificate_id)))
+    )
+    error_message = "certificate_id must be empty or a valid OCI Certificates/API Gateway certificate OCID."
   }
 }
 
