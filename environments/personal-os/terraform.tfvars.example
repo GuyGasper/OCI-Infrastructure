@@ -2,10 +2,8 @@ region          = "us-ashburn-1"
 compartment_id  = "ocid1.compartment.oc1..replace_me"
 state_bucket    = "terraform-state"
 state_namespace = "replace_me"
-# Optional: leave unset until a real placeholder gateway certificate exists.
-# certificate_id = "ocid1.apigatewaycertificate.oc1.us-ashburn-1.replace_me"
 
-# OKE development cluster (existing placeholder stays during verification).
+# OKE development cluster.
 kubernetes_version  = "REPLACE_WITH_SUPPORTED_VERSION"
 node_image_id       = "ocid1.image.oc1.us-ashburn-1.replace_me"
 availability_domain = "REPLACE_WITH_AD_NAME"

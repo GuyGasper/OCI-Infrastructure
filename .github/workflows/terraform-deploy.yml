@@ -143,7 +143,6 @@ jobs:
       - name: Plan Personal OS infrastructure
         if: ${{ inputs.target == 'personal-os' || inputs.target == 'all' }}
         env:
-          TF_VAR_certificate_id: ${{ vars.PERSONAL_OS_CERTIFICATE_ID }}
           TF_VAR_kubernetes_version: ${{ vars.PERSONAL_OS_KUBERNETES_VERSION }}
           TF_VAR_node_image_id: ${{ vars.PERSONAL_OS_NODE_IMAGE_ID }}
           TF_VAR_availability_domain: ${{ vars.PERSONAL_OS_AVAILABILITY_DOMAIN }}
@@ -158,11 +157,11 @@ jobs:
         if: ${{ inputs.apply && (inputs.target == 'personal-os' || inputs.target == 'all') }}
         run: terraform -chdir=environments/personal-os apply -auto-approve personal-os.tfplan
 
-      - name: Publish Personal OS URL
+      - name: Publish Personal OS infrastructure details
         if: ${{ inputs.apply && (inputs.target == 'personal-os' || inputs.target == 'all') }}
         run: |
-          echo "### Personal OS: $(terraform -chdir=environments/personal-os output -raw site_url)" >> "$GITHUB_STEP_SUMMARY"
-          echo "Gateway public IP: $(terraform -chdir=environments/personal-os output -raw gateway_public_ip)" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Personal OS infrastructure" >> "$GITHUB_STEP_SUMMARY"
           echo "OKE cluster: $(terraform -chdir=environments/personal-os output -raw cluster_id)" >> "$GITHUB_STEP_SUMMARY"
           echo "Load balancer subnet: $(terraform -chdir=environments/personal-os output -raw load_balancer_subnet_id)" >> "$GITHUB_STEP_SUMMARY"
           echo "Load balancer NSG: $(terraform -chdir=environments/personal-os output -raw load_balancer_nsg_id)" >> "$GITHUB_STEP_SUMMARY"
+          echo "The application load balancer and HTTPS endpoint are created when the Kubernetes manifests are deployed." >> "$GITHUB_STEP_SUMMARY"

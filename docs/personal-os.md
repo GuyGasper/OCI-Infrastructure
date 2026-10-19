@@ -1,10 +1,10 @@
 # Personal OS: OKE development environment
 
-`environments/personal-os` owns both the existing static placeholder and the new
-OKE resources in the existing `personal-os/terraform.tfstate`. Keep the original
-`module.site`, bucket, API Gateway, and certificate binding until Kubernetes and
-DNS cutover have been verified. No Terraform state migration is required. An
-initial plan should contain additions, with no placeholder deletes.
+`environments/personal-os` owns OKE infrastructure and private container
+repositories in `personal-os/terraform.tfstate`. Personal OS deploys directly to
+Kubernetes; it does not create a static Object Storage site or API Gateway. The
+application load balancer and TLS listener are created by the Kubernetes Service
+after the cluster and application images are ready.
 
 ## Architecture
 
@@ -76,10 +76,9 @@ oci iam availability-domain list --compartment-id <tenancy-ocid>
 
 ## Plan and provision
 
-Extend your existing `terraform.tfvars` from the example with the OKE inputs.
-Retain `certificate_id` if the placeholder already has a certificate. Otherwise
-leave it unset; the placeholder will use its generated OCI hostname and default
-TLS certificate. For local deployment:
+Create `terraform.tfvars` from the example with your OCI and OKE inputs. A
+certificate is not required to provision the cluster; TLS is configured during
+application deployment. For local deployment:
 
 ```bash
 cd environments/personal-os
@@ -107,14 +106,13 @@ For GitHub Actions, retain existing `production` secrets/variables and add:
 | `PERSONAL_OS_NODE_MEMORY_GBS` | Optional; default `6` |
 | `PERSONAL_OS_NODE_COUNT` | Optional; default `1` |
 
-Keep `PERSONAL_OS_CERTIFICATE_ID` if the placeholder already has a certificate;
-otherwise leave that variable unset (do not use a fake OCID). It is optional and
-applies only to the placeholder gateway, not the OKE load balancer. Run **Deploy OCI
-infrastructure**, target `personal-os`, with apply disabled first. Review the
-plan; then run with apply enabled. This provisions infrastructure only; it does
-not build apps or apply Kubernetes manifests. Existing `site_url` and
-`gateway_public_ip` outputs still refer to the placeholder. Obtain the new load
-balancer IP from Kubernetes after app deployment.
+Run **Deploy OCI infrastructure**, target `personal-os`, with apply disabled
+first. Review the plan; then run with apply enabled. This provisions
+infrastructure only; it does not build apps or apply Kubernetes manifests. The
+workflow summary publishes the cluster ID and load balancer subnet/NSG IDs.
+Obtain the public load balancer IP from Kubernetes after app deployment. The old
+`PERSONAL_OS_CERTIFICATE_ID` variable is no longer used and can be removed from
+the GitHub environment if present.
 
 ## Application image contracts
 
@@ -162,9 +160,8 @@ kubectl -n personal-os create secret tls personal-os-tls \
 ```
 
 The certificate must cover both `personal-os.tech` and `www.personal-os.tech`.
-The existing API Gateway certificate OCID alone is not a TLS secret: supply the
-actual certificate chain and private key, or separately configure OCI Certificates
-integration. Keep keys outside Git and rotate the TLS secret before expiry;
+Supply the actual certificate chain and matching private key, or separately
+configure OCI Certificates integration. Keep keys outside Git and rotate the TLS secret before expiry;
 verify the served certificate after rotation. The Service follows Oracle's
 [TLS and load-balancer annotations](https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengcreatingloadbalancers-subtopic.htm).
 
@@ -195,7 +192,7 @@ HTTP-to-HTTPS redirection on port 80 is not configured initially.
 
 ## Verification and DNS cutover
 
-Use the Service's external IP while DNS still points to the old API Gateway:
+Use the Service's external IP to verify HTTPS and routing before changing DNS:
 
 ```bash
 curl --fail --resolve 'personal-os.tech:443:<lb-ip>' https://personal-os.tech/
@@ -209,11 +206,8 @@ listener certificates, and healthy load balancer backends. Do not use `-k`. Then
 change Namecheap `@` and `www` A records to the load balancer IP. Remove conflicting
 records, including stale AAAA records if IPv6 was set, and retain certificate
 validation records. Verify both hostnames through normal DNS after propagation.
-Record the old gateway IP for DNS rollback.
+Record the previous DNS values for rollback.
 
-Only after verification and the agreed rollback window should a follow-up change
-remove `module.site`, its placeholder-specific outputs/variables, and placeholder
-HTML. Review the resulting Terraform destroy plan explicitly. OKE stays in the
-same Personal OS state. For eventual cluster teardown, delete the Kubernetes
+For eventual cluster teardown, delete the Kubernetes
 LoadBalancer Service and wait for the OCI load balancer to disappear before
 destroying cluster networking.

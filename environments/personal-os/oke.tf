@@ -19,7 +19,7 @@ variable "node_count" {
   default = 1
 }
 
-# Reuse the existing internet route. The placeholder stays until cutover is verified.
+# Reuse the shared public subnet's internet route for the dedicated OKE subnets.
 data "oci_core_subnet" "existing_public" {
   subnet_id = data.terraform_remote_state.shared.outputs.api_gateway_subnet_id
 }
