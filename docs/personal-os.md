@@ -133,7 +133,11 @@ Terraform creates private OCIR repositories `personal-os/api` and
   browser uses the same HTTPS origin for frontend and API.
 
 Manifests define one replica per app, probes, resources, and restricted pod
-security. Runtime app secrets are injected separately. No database or app secrets
+security. The API requests 200m CPU and 512Mi memory, with limits of 1 CPU and
+1Gi; the frontend requests 50m CPU and 64Mi memory. Keep capacity for an extra
+API pod during rolling updates. The application CI/CD workflow waits for the API
+rollout before updating the frontend so both services do not start rolling at
+once. Runtime app secrets are injected separately. No database or app secrets
 are defined by this scaffold.
 
 ## Connect, configure secrets, and deploy
