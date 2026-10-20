@@ -1,5 +1,11 @@
 # Bootstrap and DNS
 
+This is the original wedding placeholder bootstrap. For the current SG-Wedding
+OKE setup and migration without removing the placeholder, follow
+[docs/sg-wedding.md](sg-wedding.md). The infrastructure workflow's `wedding`
+target now also requires the `WEDDING_*` OKE variables documented there; its
+existing `OCI_CERTIFICATE_ID` still belongs to the retained placeholder.
+
 ## 1. Local and OCI prerequisites
 
 Install Terraform and configure the OCI provider using `~/.oci/config` (or the

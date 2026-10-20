@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: sg-wedding-web
+  annotations:
+    oci.oraclecloud.com/load-balancer-type: lb
+    service.beta.kubernetes.io/oci-load-balancer-shape: flexible
+    service.beta.kubernetes.io/oci-load-balancer-shape-flex-min: "10"
+    service.beta.kubernetes.io/oci-load-balancer-shape-flex-max: "10"
+    service.beta.kubernetes.io/oci-load-balancer-subnet1: REPLACE_WITH_SUBNET_OCID
+    oci.oraclecloud.com/oci-network-security-groups: REPLACE_WITH_NSG_OCID
+    oci.oraclecloud.com/security-rule-management-mode: None
+    service.beta.kubernetes.io/oci-load-balancer-security-list-management-mode: None
+    service.beta.kubernetes.io/oci-load-balancer-backend-protocol: HTTP
+    service.beta.kubernetes.io/oci-load-balancer-ssl-ports: "443"
+    service.beta.kubernetes.io/oci-load-balancer-tls-secret: sg-wedding-tls
+    oci.oraclecloud.com/oci-load-balancer-listener-ssl-config: '{"CipherSuiteName":"oci-default-http2-tls-12-13-ssl-cipher-suite-v1","Protocols":["TLSv1.2","TLSv1.3"]}'
+spec:
+  type: LoadBalancer
+  externalTrafficPolicy: Cluster
+  selector:
+    app: sg-wedding-frontend
+  ports:
+    - name: https
+      port: 443
+      targetPort: http

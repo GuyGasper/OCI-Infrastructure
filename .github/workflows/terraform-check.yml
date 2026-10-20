@@ -6,8 +6,9 @@ on:
       - "**.tf"
       - "**.hcl"
       - "**.tfvars.example"
-      - "kubernetes/personal-os/**"
-      - "scripts/render-personal-os.py"
+      - "**.tftest.hcl"
+      - "kubernetes/**"
+      - "scripts/render-*.py"
       - ".github/workflows/terraform-*.yml"
   push:
     branches: [main]
@@ -15,8 +16,9 @@ on:
       - "**.tf"
       - "**.hcl"
       - "**.tfvars.example"
-      - "kubernetes/personal-os/**"
-      - "scripts/render-personal-os.py"
+      - "**.tftest.hcl"
+      - "kubernetes/**"
+      - "scripts/render-*.py"
       - ".github/workflows/terraform-*.yml"
 
 permissions:
@@ -55,14 +57,22 @@ jobs:
       - name: Validate Personal OS
         run: terraform -chdir=environments/personal-os validate
 
-      - name: Render Personal OS Kubernetes manifests
+      - name: Initialize OKE module tests
+        run: terraform -chdir=modules/oke init -backend=false -input=false
+
+      - name: Check OKE routing isolation and reuse
+        run: terraform -chdir=modules/oke test
+
+      - name: Render application Kubernetes manifests
         shell: bash
         run: |
-          tools_dir="$RUNNER_TEMP/personal-os-tools"
+          tools_dir="$RUNNER_TEMP/kubernetes-tools"
           mkdir -p "$tools_dir"
           curl -fsSLo "$tools_dir/kubectl" https://dl.k8s.io/release/v1.35.0/bin/linux/amd64/kubectl
           curl -fsSLo "$tools_dir/kubectl.sha256" https://dl.k8s.io/release/v1.35.0/bin/linux/amd64/kubectl.sha256
           echo "$(cat "$tools_dir/kubectl.sha256")  $tools_dir/kubectl" | sha256sum --check
           chmod +x "$tools_dir/kubectl"
           "$tools_dir/kubectl" kustomize kubernetes/personal-os > "$RUNNER_TEMP/personal-os-base.yaml"
+          "$tools_dir/kubectl" kustomize kubernetes/sg-wedding > "$RUNNER_TEMP/sg-wedding-base.yaml"
           python3 scripts/render-personal-os.py --help
+          python3 scripts/render-sg-wedding.py --help

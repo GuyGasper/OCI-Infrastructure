@@ -94,6 +94,18 @@ jobs:
         if: ${{ inputs.apply && (inputs.target == 'shared' || inputs.target == 'all') }}
         run: terraform -chdir=environments/shared apply -auto-approve shared.tfplan
 
+      - name: Check wedding configuration
+        if: ${{ inputs.target == 'wedding' || inputs.target == 'all' }}
+        env:
+          WEDDING_KUBERNETES_VERSION: ${{ vars.WEDDING_KUBERNETES_VERSION }}
+          WEDDING_NODE_IMAGE_ID: ${{ vars.WEDDING_NODE_IMAGE_ID }}
+          WEDDING_AVAILABILITY_DOMAIN: ${{ vars.WEDDING_AVAILABILITY_DOMAIN }}
+          WEDDING_ADMIN_CIDRS: ${{ vars.WEDDING_ADMIN_CIDRS }}
+        run: |
+          for name in WEDDING_KUBERNETES_VERSION WEDDING_NODE_IMAGE_ID WEDDING_AVAILABILITY_DOMAIN WEDDING_ADMIN_CIDRS; do
+            test -n "${!name}" || { echo "$name is not set"; exit 1; }
+          done
+
       - name: Initialize wedding state
         if: ${{ inputs.target == 'wedding' || inputs.target == 'all' }}
         run: |
@@ -103,21 +115,34 @@ jobs:
             -backend-config="region=${{ vars.OCI_REGION }}" \
             -backend-config="key=wedding/terraform.tfstate"
 
-      - name: Plan wedding site
+      - name: Plan wedding infrastructure
         if: ${{ inputs.target == 'wedding' || inputs.target == 'all' }}
         env:
           TF_VAR_certificate_id: ${{ vars.OCI_CERTIFICATE_ID }}
+          TF_VAR_kubernetes_version: ${{ vars.WEDDING_KUBERNETES_VERSION }}
+          TF_VAR_node_image_id: ${{ vars.WEDDING_NODE_IMAGE_ID }}
+          TF_VAR_availability_domain: ${{ vars.WEDDING_AVAILABILITY_DOMAIN }}
+          TF_VAR_admin_cidrs: ${{ vars.WEDDING_ADMIN_CIDRS }}
+          TF_VAR_node_shape: ${{ vars.WEDDING_NODE_SHAPE || 'VM.Standard.A1.Flex' }}
+          TF_VAR_node_ocpus: ${{ vars.WEDDING_NODE_OCPUS || '1' }}
+          TF_VAR_node_memory_gbs: ${{ vars.WEDDING_NODE_MEMORY_GBS || '6' }}
+          TF_VAR_node_count: ${{ vars.WEDDING_NODE_COUNT || '1' }}
         run: terraform -chdir=environments/wedding plan -out=wedding.tfplan
 
-      - name: Apply wedding site
+      - name: Apply wedding infrastructure
         if: ${{ inputs.apply && (inputs.target == 'wedding' || inputs.target == 'all') }}
         run: terraform -chdir=environments/wedding apply -auto-approve wedding.tfplan
 
-      - name: Publish wedding URL
+      - name: Publish wedding infrastructure details
         if: ${{ inputs.apply && (inputs.target == 'wedding' || inputs.target == 'all') }}
         run: |
-          echo "### Wedding: $(terraform -chdir=environments/wedding output -raw site_url)" >> "$GITHUB_STEP_SUMMARY"
-          echo "Gateway public IP: $(terraform -chdir=environments/wedding output -raw gateway_public_ip)" >> "$GITHUB_STEP_SUMMARY"
+          echo "### SG-Wedding infrastructure" >> "$GITHUB_STEP_SUMMARY"
+          echo "OKE cluster: $(terraform -chdir=environments/wedding output -raw cluster_id)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Load balancer subnet: $(terraform -chdir=environments/wedding output -raw load_balancer_subnet_id)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Load balancer NSG: $(terraform -chdir=environments/wedding output -raw load_balancer_nsg_id)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Existing placeholder: $(terraform -chdir=environments/wedding output -raw site_url)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Existing gateway public IP: $(terraform -chdir=environments/wedding output -raw gateway_public_ip)" >> "$GITHUB_STEP_SUMMARY"
+          echo "The new application load balancer and HTTPS endpoint are created when the Kubernetes manifests are deployed. Keep the placeholder until cutover is verified." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Check Personal OS configuration
         if: ${{ inputs.target == 'personal-os' || inputs.target == 'all' }}

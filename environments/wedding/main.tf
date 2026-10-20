@@ -19,6 +19,8 @@ data "terraform_remote_state" "shared" {
   }
 }
 
+# Retain this live placeholder and its certificate until OKE is verified and DNS
+# cutover is complete. Its existing Terraform address must stay unchanged.
 module "site" {
   source                     = "../../modules/static-site"
   name                       = "sg2027-wedding"

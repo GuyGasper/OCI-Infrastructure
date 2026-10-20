@@ -40,6 +40,13 @@ inbound SSH rule. Flannel overlay pods use `10.244.0.0/16`, and services use
 Flannel configuration does not enforce Kubernetes NetworkPolicies. The Java
 Service is internal, but reachable by other pods in this cluster.
 
+SG-Wedding can reuse this environment's private outbound route, NAT gateway,
+and service gateway while running its own cluster in separate subnets. See
+[docs/sg-wedding.md](sg-wedding.md). Do not tear down Personal OS networking
+while wedding depends on that route. The optional route reuse added to the OKE
+module includes `moved` blocks for the existing Personal OS gateways and private
+route table; a plan must preserve those resources rather than replace them.
+
 ## OCI prerequisites
 
 The shared state and VCN must already exist. Use the same region and compartment

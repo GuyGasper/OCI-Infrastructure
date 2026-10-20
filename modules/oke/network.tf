@@ -7,12 +7,14 @@ data "oci_core_services" "regional" {
 }
 
 resource "oci_core_nat_gateway" "workers" {
+  count          = var.private_route_table_id == null ? 1 : 0
   compartment_id = var.compartment_id
   vcn_id         = var.vcn_id
   display_name   = "${var.name}-nat"
 }
 
 resource "oci_core_service_gateway" "regional" {
+  count          = var.private_route_table_id == null ? 1 : 0
   compartment_id = var.compartment_id
   vcn_id         = var.vcn_id
   display_name   = "${var.name}-services"
@@ -22,19 +24,34 @@ resource "oci_core_service_gateway" "regional" {
 }
 
 resource "oci_core_route_table" "private" {
+  count          = var.private_route_table_id == null ? 1 : 0
   compartment_id = var.compartment_id
   vcn_id         = var.vcn_id
   display_name   = "${var.name}-private"
   route_rules {
     destination       = "0.0.0.0/0"
     destination_type  = "CIDR_BLOCK"
-    network_entity_id = oci_core_nat_gateway.workers.id
+    network_entity_id = oci_core_nat_gateway.workers[0].id
   }
   route_rules {
     destination       = one(data.oci_core_services.regional.services).cidr_block
     destination_type  = "SERVICE_CIDR_BLOCK"
-    network_entity_id = oci_core_service_gateway.regional.id
+    network_entity_id = oci_core_service_gateway.regional[0].id
   }
+}
+
+# Preserve existing Personal OS resource addresses when enabling routing reuse.
+moved {
+  from = oci_core_nat_gateway.workers
+  to   = oci_core_nat_gateway.workers[0]
+}
+moved {
+  from = oci_core_service_gateway.regional
+  to   = oci_core_service_gateway.regional[0]
+}
+moved {
+  from = oci_core_route_table.private
+  to   = oci_core_route_table.private[0]
 }
 
 # Keep subnet security lists empty; all permissions are explicit NSG rules below.
@@ -46,9 +63,9 @@ resource "oci_core_security_list" "empty" {
 
 locals {
   subnets = {
-    endpoint = { cidr = var.endpoint_cidr, private = false, dns = "okeapi" }
-    workers  = { cidr = var.worker_cidr, private = true, dns = "okeworkers" }
-    ingress  = { cidr = var.load_balancer_cidr, private = false, dns = "okelb" }
+    endpoint = { cidr = var.endpoint_cidr, private = false, dns = "${var.subnet_dns_prefix}api" }
+    workers  = { cidr = var.worker_cidr, private = true, dns = "${var.subnet_dns_prefix}workers" }
+    ingress  = { cidr = var.load_balancer_cidr, private = false, dns = "${var.subnet_dns_prefix}lb" }
   }
 }
 
@@ -60,7 +77,7 @@ resource "oci_core_subnet" "this" {
   display_name               = "${var.name}-${each.key}"
   dns_label                  = each.value.dns
   prohibit_public_ip_on_vnic = each.value.private
-  route_table_id             = each.value.private ? oci_core_route_table.private.id : var.public_route_table_id
+  route_table_id             = each.value.private ? (var.private_route_table_id != null ? var.private_route_table_id : oci_core_route_table.private[0].id) : var.public_route_table_id
   security_list_ids          = [oci_core_security_list.empty.id]
 }
 

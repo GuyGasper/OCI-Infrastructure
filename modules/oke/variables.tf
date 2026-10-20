@@ -1,6 +1,20 @@
 variable "compartment_id" { type = string }
 variable "vcn_id" { type = string }
 variable "public_route_table_id" { type = string }
+variable "private_route_table_id" {
+  description = "Existing worker egress route table in this VCN. When set, reuse it instead of creating NAT/service gateways."
+  type        = string
+  default     = null
+}
+variable "subnet_dns_prefix" {
+  description = "VCN-unique prefix for endpoint, worker, and ingress subnet DNS labels."
+  type        = string
+  default     = "oke"
+  validation {
+    condition     = can(regex("^[a-z][a-z0-9]{0,6}$", var.subnet_dns_prefix))
+    error_message = "Use a lowercase letter followed by up to six lowercase letters or digits."
+  }
+}
 variable "name" {
   type    = string
   default = "personal-os"

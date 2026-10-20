@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: sg-wedding
+resources:
+  - namespace.yaml
+  - api.yaml
+  - frontend.yaml
+  - load-balancer.yaml
+configMapGenerator:
+  - name: frontend-nginx
+    files:
+      - default.conf=nginx.conf
