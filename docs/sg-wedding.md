@@ -264,6 +264,13 @@ after DNS propagation. Their later removal is a separate change: review its
 destruction plan for only the old wedding Object Storage/API Gateway resources.
 Do not remove shared networking or either cluster's infrastructure during cleanup.
 
+The legacy static-site module freezes its existing index object's `source`
+while the placeholder is retained. The OCI provider includes the file's local
+modification time in this field, which otherwise proposes a replacement on each
+fresh checkout. Changes to the placeholder HTML are intentionally not published
+during migration. Remove that lifecycle rule before using this legacy module
+for a site whose HTML should be updated again.
+
 For eventual cluster teardown, delete the Kubernetes
 LoadBalancer Service and wait for the OCI load balancer to disappear before
 destroying cluster networking.

@@ -17,6 +17,13 @@ resource "oci_objectstorage_object" "index" {
   object       = "index.html"
   source       = var.index_file
   content_type = "text/html; charset=utf-8"
+
+  # This legacy placeholder is frozen during the OKE migration. The provider
+  # includes the local file's modification time in source, so a fresh checkout
+  # would otherwise replace the live object even when its content is unchanged.
+  lifecycle {
+    ignore_changes = [source]
+  }
 }
 
 locals {
