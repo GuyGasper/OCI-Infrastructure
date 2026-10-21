@@ -131,7 +131,7 @@ resource "oci_core_subnet" "bastion" {
 
 resource "oci_bastion_bastion" "database" {
   count                        = local.bastion_enabled ? 1 : 0
-  bastion_type                 = "standard"
+  bastion_type                 = "STANDARD"
   compartment_id               = var.compartment_id
   target_subnet_id             = oci_core_subnet.bastion[0].id
   name                         = "sharedDatabase"

@@ -37,6 +37,11 @@ run "dedicated_small_private_vm" {
       one(oci_core_instance.postgres.create_vnic_details).private_ip == "10.20.80.10" &&
       one(oci_core_instance.postgres.create_vnic_details).subnet_id == oci_core_subnet.database.id &&
       toset(one(oci_core_instance.postgres.create_vnic_details).nsg_ids) == toset([oci_core_network_security_group.database.id]) &&
+      oci_core_instance.postgres.is_pv_encryption_in_transit_enabled &&
+      one(oci_core_instance.postgres.launch_options).network_type == "PARAVIRTUALIZED" &&
+      one(oci_core_instance.postgres.launch_options).boot_volume_type == "PARAVIRTUALIZED" &&
+      one(oci_core_instance.postgres.launch_options).remote_data_volume_type == "PARAVIRTUALIZED" &&
+      one(oci_core_instance.postgres.launch_options).firmware == "UEFI_64" &&
       one(oci_core_instance.postgres.instance_options).are_legacy_imds_endpoints_disabled &&
       oci_core_subnet.database.prohibit_public_ip_on_vnic
     )

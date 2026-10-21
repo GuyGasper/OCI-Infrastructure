@@ -50,6 +50,7 @@ run "restricted_database_tunnel" {
   assert {
     condition = (
       toset(oci_bastion_bastion.database[0].client_cidr_block_allow_list) == toset(["203.0.113.10/32"]) &&
+      oci_bastion_bastion.database[0].bastion_type == "STANDARD" &&
       oci_bastion_bastion.database[0].max_session_ttl_in_seconds == 10800 &&
       oci_bastion_bastion.database[0].dns_proxy_status == "DISABLED" &&
       oci_bastion_bastion.database[0].target_subnet_id == oci_core_subnet.bastion[0].id &&

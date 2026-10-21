@@ -135,10 +135,11 @@ resource "oci_core_volume" "postgres" {
 }
 
 resource "oci_core_instance" "postgres" {
-  availability_domain = var.postgres_availability_domain
-  compartment_id      = var.compartment_id
-  display_name        = "shared-postgres"
-  shape               = "VM.Standard.A1.Flex"
+  availability_domain                 = var.postgres_availability_domain
+  compartment_id                      = var.compartment_id
+  display_name                        = "shared-postgres"
+  shape                               = "VM.Standard.A1.Flex"
+  is_pv_encryption_in_transit_enabled = true
   shape_config {
     ocpus         = 1
     memory_in_gbs = 6
@@ -157,8 +158,13 @@ resource "oci_core_instance" "postgres" {
     nsg_ids          = [oci_core_network_security_group.database.id]
   }
   launch_options {
+    # OCI requires network_type when launch_options is supplied. These match
+    # the pinned Ubuntu ARM64 image and A1 paravirtualized devices.
+    network_type                        = "PARAVIRTUALIZED"
+    boot_volume_type                    = "PARAVIRTUALIZED"
+    remote_data_volume_type             = "PARAVIRTUALIZED"
+    firmware                            = "UEFI_64"
     is_consistent_volume_naming_enabled = true
-    is_pv_encryption_in_transit_enabled = true
   }
   instance_options {
     are_legacy_imds_endpoints_disabled = true
