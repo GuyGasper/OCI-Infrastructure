@@ -47,7 +47,13 @@ terraform-state/wedding/terraform.tfstate
 The native OCI backend provides state locking. Never make the state bucket
 public: state can contain infrastructure identifiers and sensitive values.
 
-## 3. Deploy the shared network locally
+## 3. Deploy the shared infrastructure locally
+
+Shared state now also creates a paid private Autonomous Database. Complete the
+IAM and password prerequisites in [database setup](database.md) before planning
+or applying this root. Set `TF_VAR_database_admin_password` locally, or configure
+the `SHARED_DATABASE_ADMIN_PASSWORD` production secret for Actions. Existing
+shared networking remains at its current Terraform addresses.
 
 ```bash
 cd environments/shared
@@ -120,6 +126,7 @@ Add these environment **secrets**:
 | `OCI_USER_OCID` | Dedicated automation user OCID |
 | `OCI_FINGERPRINT` | API signing key fingerprint |
 | `OCI_PRIVATE_KEY` | Entire PEM private key, including BEGIN/END lines |
+| `SHARED_DATABASE_ADMIN_PASSWORD` | Shared database ADMIN password; see [database setup](database.md) |
 
 Add these environment **variables**:
 

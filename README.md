@@ -15,7 +15,7 @@ for the original state/backend bootstrap.
 - `modules/network`: reusable VCN, public API Gateway subnet, and NSG.
 - `modules/static-site`: Object Storage object plus an API Gateway deployment.
 - `modules/oke`: OKE Basic cluster creation/reuse, managed workers, subnets, and routing.
-- `environments/shared`: account-level networking shared by multiple projects.
+- `environments/shared`: networking and a private Autonomous Database shared by both apps.
 - `environments/wedding`: SG-Wedding OKE infrastructure, repositories, and retained placeholder.
 - `environments/personal-os`: Personal OS OKE infrastructure and private container repositories.
 - `kubernetes/personal-os`: Java API, React/Nginx frontend, and HTTPS load balancer manifests.
@@ -25,6 +25,11 @@ Each environment has separate Terraform state. Personal OS owns the shared
 cluster and private worker network in the existing VCN. Wedding reads that
 cluster ID from Personal OS state and adds its own worker pool in the same
 worker subnet/NSG; its HTTPS load balancer keeps a separate subnet and NSG.
+Shared state also owns one paid Autonomous Transaction Processing database
+(2 ECPUs, 20 GB, autoscaling disabled), with a private endpoint in `10.20.80.0/24`.
+Both Java APIs can connect over TLS from their shared worker subnet; configure
+separate database users and namespace-local secrets. See [docs/database.md](docs/database.md)
+for deployment, credentials, and connection setup.
 Already-created unused wedding endpoint/worker networking is retained for later
 cleanup. The retained placeholder uses the original API Gateway subnet and NSG.
 See [docs/personal-os.md](docs/personal-os.md) and

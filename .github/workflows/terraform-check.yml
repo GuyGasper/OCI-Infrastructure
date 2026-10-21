@@ -45,6 +45,9 @@ jobs:
       - name: Validate shared
         run: terraform -chdir=environments/shared validate
 
+      - name: Check shared database access and sizing
+        run: terraform -chdir=environments/shared test
+
       - name: Initialize wedding without backend
         run: terraform -chdir=environments/wedding init -backend=false -input=false
 

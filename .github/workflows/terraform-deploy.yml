@@ -77,6 +77,13 @@ jobs:
             '${{ vars.OCI_NAMESPACE }}' \
             '${{ vars.OCI_REGION }}'
 
+      - name: Check shared database configuration
+        if: ${{ inputs.target == 'shared' || inputs.target == 'all' }}
+        env:
+          DATABASE_ADMIN_PASSWORD: ${{ secrets.SHARED_DATABASE_ADMIN_PASSWORD }}
+        run: |
+          test -n "$DATABASE_ADMIN_PASSWORD" || { echo "SHARED_DATABASE_ADMIN_PASSWORD is not set"; exit 1; }
+
       - name: Initialize shared state
         if: ${{ inputs.target == 'shared' || inputs.target == 'all' }}
         run: |
@@ -86,11 +93,16 @@ jobs:
             -backend-config="region=${{ vars.OCI_REGION }}" \
             -backend-config="key=shared/terraform.tfstate"
 
-      - name: Plan shared network
+      - name: Plan shared infrastructure
         if: ${{ inputs.target == 'shared' || inputs.target == 'all' }}
+        env:
+          TF_VAR_database_admin_password: ${{ secrets.SHARED_DATABASE_ADMIN_PASSWORD }}
+          TF_VAR_database_name: ${{ vars.SHARED_DATABASE_NAME || 'sharedapps' }}
+          TF_VAR_database_ecpu_count: ${{ vars.SHARED_DATABASE_ECPU_COUNT || '2' }}
+          TF_VAR_database_storage_gb: ${{ vars.SHARED_DATABASE_STORAGE_GB || '20' }}
         run: terraform -chdir=environments/shared plan -out=shared.tfplan
 
-      - name: Apply shared network
+      - name: Apply shared infrastructure
         if: ${{ inputs.apply && (inputs.target == 'shared' || inputs.target == 'all') }}
         run: terraform -chdir=environments/shared apply -auto-approve shared.tfplan
 

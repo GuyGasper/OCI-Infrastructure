@@ -241,3 +241,14 @@ Record the previous DNS values for rollback.
 For eventual cluster teardown, delete the Kubernetes
 LoadBalancer Service and wait for the OCI load balancer to disappear before
 destroying cluster networking.
+
+## Shared database
+
+Both applications use the private Autonomous Transaction Processing database
+owned by `environments/shared`. Follow [database setup](database.md) to deploy it,
+create a separate application schema, and install `database-credentials` in this
+application's namespace before deploying a database-dependent API image. The API
+deployment imports `JDBC_URL`, `DB_USERNAME`, and `DB_PASSWORD` from that secret.
+The reference is optional so existing API images can run during the transition;
+database-dependent images must validate their required configuration at startup.
+Application code must use the Oracle JDBC driver and consume these variables.

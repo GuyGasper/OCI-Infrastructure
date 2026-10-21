@@ -1,2 +1,10 @@
 region         = "us-chicago-1"
 compartment_id = "ocid1.compartment.oc1..replace_me"
+
+# Paid Autonomous Transaction Processing with a private endpoint.
+database_name         = "sharedapps"
+database_ecpu_count   = 2
+database_storage_gb   = 20
+database_subnet_cidr  = "10.20.80.0/24"
+database_client_cidrs = ["10.20.30.0/24"]
+# Supply database_admin_password via TF_VAR_database_admin_password, not this file.

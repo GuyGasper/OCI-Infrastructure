@@ -38,6 +38,10 @@ spec:
           env:
             - name: JAVA_TOOL_OPTIONS
               value: "-XX:MaxRAMPercentage=75.0 -Djava.io.tmpdir=/tmp"
+          envFrom:
+            - secretRef:
+                name: database-credentials
+                optional: true
           resources:
             requests:
               cpu: 200m
