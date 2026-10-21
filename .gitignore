@@ -8,3 +8,4 @@ terraform.tfvars.json
 .local/
 crash.log
 .DS_Store
+__pycache__/

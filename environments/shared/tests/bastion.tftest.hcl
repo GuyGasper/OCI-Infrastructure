@@ -1,20 +1,15 @@
 mock_provider "oci" {
+  mock_data "oci_core_nat_gateways" {
+    defaults = { nat_gateways = [{ id = "ocid1.natgateway.oc1.iad.existing", block_traffic = false }] }
+  }
   mock_data "oci_core_services" {
-    defaults = {
-      services = [{
-        id         = "ocid1.service.oc1.iad.test"
-        cidr_block = "all-iad-services-in-oracle-services-network"
-      }]
-    }
+    defaults = { services = [{ id = "ocid1.service.oc1.iad.test", cidr_block = "all-iad-services-in-oracle-services-network" }] }
   }
   mock_data "oci_core_service_gateways" {
-    defaults = {
-      service_gateways = [{
-        id            = "ocid1.servicegateway.oc1.iad.existing"
-        block_traffic = false
-        services      = [{ service_id = "ocid1.service.oc1.iad.test" }]
-      }]
-    }
+    defaults = { service_gateways = [{ id = "ocid1.servicegateway.oc1.iad.existing", block_traffic = false, services = [{ service_id = "ocid1.service.oc1.iad.test" }] }] }
+  }
+  mock_data "oci_core_image" {
+    defaults = { id = "ocid1.image.oc1.iad.test", operating_system = "Canonical Ubuntu", operating_system_version = "24.04", display_name = "Canonical-Ubuntu-24.04-aarch64-test" }
   }
   mock_resource "oci_bastion_bastion" {
     defaults = { private_endpoint_ip_address = "10.20.90.2" }
@@ -22,11 +17,13 @@ mock_provider "oci" {
 }
 
 variables {
-  region                  = "us-chicago-1"
-  compartment_id          = "ocid1.compartment.oc1..test"
-  database_admin_password = "ExampleOnly12345"
+  region                       = "us-ashburn-1"
+  compartment_id               = "ocid1.compartment.oc1..test"
+  tenancy_id                   = "ocid1.tenancy.oc1..test"
+  postgres_availability_domain = "test:US-ASHBURN-AD-1"
+  postgres_image_id            = "ocid1.image.oc1.iad.test"
+  postgres_ssh_public_key      = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAITestOnly"
 }
-
 run "disabled_without_client_allowlist" {
   command = plan
 
@@ -67,11 +64,12 @@ run "restricted_database_tunnel" {
       one(oci_core_route_table.bastion[0].route_rules).network_entity_id == "ocid1.servicegateway.oc1.iad.existing" &&
       one(oci_core_route_table.bastion[0].route_rules).destination_type == "SERVICE_CIDR_BLOCK" &&
       length(oci_core_security_list.bastion[0].ingress_security_rules) == 0 &&
-      length(oci_core_security_list.bastion[0].egress_security_rules) == 2 &&
+      length(oci_core_security_list.bastion[0].egress_security_rules) == 3 &&
       alltrue([for rule in oci_core_security_list.bastion[0].egress_security_rules :
         rule.protocol == "6" && !rule.stateless && (
           (rule.destination_type == "CIDR_BLOCK" && rule.destination == var.database_subnet_cidr &&
-          one(rule.tcp_options).min == 1521 && one(rule.tcp_options).max == 1521) ||
+            ((one(rule.tcp_options).min == 5432 && one(rule.tcp_options).max == 5432) ||
+          (one(rule.tcp_options).min == 22 && one(rule.tcp_options).max == 22))) ||
           (rule.destination_type == "SERVICE_CIDR_BLOCK" && rule.destination == "all-iad-services-in-oracle-services-network" &&
           one(rule.tcp_options).min == 443 && one(rule.tcp_options).max == 443)
         )
@@ -82,16 +80,19 @@ run "restricted_database_tunnel" {
 
   assert {
     condition = (
+      oci_core_network_security_group_security_rule.database_bastion_ssh[0].source == "10.20.90.2/32" &&
+      one(oci_core_network_security_group_security_rule.database_bastion_ssh[0].tcp_options).destination_port_range[0].min == 22 &&
+      one(oci_core_network_security_group_security_rule.database_bastion_ssh[0].tcp_options).destination_port_range[0].max == 22 &&
       oci_core_network_security_group_security_rule.database_bastion[0].network_security_group_id == oci_core_network_security_group.database.id &&
       oci_core_network_security_group_security_rule.database_bastion[0].source == "10.20.90.2/32" &&
       oci_core_network_security_group_security_rule.database_bastion[0].source_type == "CIDR_BLOCK" &&
       oci_core_network_security_group_security_rule.database_bastion[0].direction == "INGRESS" &&
       oci_core_network_security_group_security_rule.database_bastion[0].protocol == "6" &&
       !oci_core_network_security_group_security_rule.database_bastion[0].stateless &&
-      one(oci_core_network_security_group_security_rule.database_bastion[0].tcp_options).destination_port_range[0].min == 1521 &&
-      one(oci_core_network_security_group_security_rule.database_bastion[0].tcp_options).destination_port_range[0].max == 1521
+      one(oci_core_network_security_group_security_rule.database_bastion[0].tcp_options).destination_port_range[0].min == 5432 &&
+      one(oci_core_network_security_group_security_rule.database_bastion[0].tcp_options).destination_port_range[0].max == 5432
     )
-    error_message = "Database must allow only the Bastion's private endpoint /32 on TLS port 1521."
+    error_message = "Database must allow only the Bastion's private endpoint /32 on TLS port 5432 and SSH port 22."
   }
 }
 

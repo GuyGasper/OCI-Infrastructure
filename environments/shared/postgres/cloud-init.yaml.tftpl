@@ -1,0 +1,36 @@
+#cloud-config
+ssh_pwauth: false
+disable_root: true
+write_files:
+  - path: /usr/local/sbin/postgres-bootstrap
+    permissions: '0700'
+    encoding: gz+b64
+    content: ${bootstrap}
+  - path: /usr/local/sbin/postgres-backup
+    permissions: '0700'
+    encoding: gz+b64
+    content: ${backup}
+  - path: /etc/shared-postgres.json
+    permissions: '0600'
+    encoding: b64
+    content: ${config}
+  - path: /etc/systemd/system/postgres-bootstrap.service
+    permissions: '0644'
+    content: |
+      [Unit]
+      Description=Initialize dedicated PostgreSQL data volume and secure server
+      Wants=network-online.target
+      After=network-online.target
+      StartLimitIntervalSec=0
+      [Service]
+      Type=oneshot
+      ExecStart=/usr/local/sbin/postgres-bootstrap
+      RemainAfterExit=yes
+      Restart=on-failure
+      RestartSec=60
+      TimeoutStartSec=1800
+      [Install]
+      WantedBy=multi-user.target
+runcmd:
+  - [systemctl, daemon-reload]
+  - [systemctl, enable, --now, --no-block, postgres-bootstrap.service]

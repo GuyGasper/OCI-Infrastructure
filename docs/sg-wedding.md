@@ -318,11 +318,11 @@ remove both apps' load-balancer Services and their load balancers first.
 
 ## Shared database
 
-Both applications use the private Autonomous Transaction Processing database
-owned by `environments/shared`. Follow [database setup](database.md) to deploy it,
-create a separate application schema, and install `database-credentials` in this
-application's namespace before deploying a database-dependent API image. The API
-deployment imports `JDBC_URL`, `DB_USERNAME`, and `DB_PASSWORD` from that secret.
-The reference is optional so existing API images can run during the transition;
-database-dependent images must validate their required configuration at startup.
-Application code must use the Oracle JDBC driver and consume these variables.
+Both applications use the private PostgreSQL 16 VM owned by `environments/shared`.
+Follow [database setup](database.md) to deploy it and install this application's
+namespace-local `database-credentials` Secret. Each app has a separate database
+and restricted role. The API imports `JDBC_URL`, `DB_USERNAME`, and `DB_PASSWORD`,
+and mounts the public CA at `/etc/database/root.crt` for `sslmode=verify-full`.
+The optional secret supports the transition; database-dependent API images must
+validate configuration at startup and use the PostgreSQL JDBC driver. Application
+code and schema migrations are maintained in the application repository.

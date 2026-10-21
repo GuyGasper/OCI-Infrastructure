@@ -49,11 +49,11 @@ public: state can contain infrastructure identifiers and sensitive values.
 
 ## 3. Deploy the shared infrastructure locally
 
-Shared state now also creates a paid private Autonomous Database. Complete the
-IAM and password prerequisites in [database setup](database.md) before planning
-or applying this root. Set `TF_VAR_database_admin_password` locally, or configure
-the `SHARED_DATABASE_ADMIN_PASSWORD` production secret for Actions. Existing
-shared networking remains at its current Terraform addresses.
+Shared state creates the shared network and a private PostgreSQL VM. Complete
+the image, SSH public key, tenancy IAM, and backup prerequisites in
+[database setup](database.md). For a fresh VCN, bootstrap only `module.network`,
+deploy Personal OS networking to create the NAT/service gateways, then apply the
+complete shared root. Existing installations can plan the full root directly.
 
 ```bash
 cd environments/shared
@@ -64,13 +64,13 @@ terraform init -reconfigure \
   -backend-config="namespace=<object-storage-namespace>" \
   -backend-config="region=us-chicago-1" \
   -backend-config="key=shared/terraform.tfstate"
-terraform apply
+terraform apply -target=module.network # fresh VCN only; then deploy Personal OS
 terraform output
 ```
 
 This VCN exposes only TCP 443 inbound to resources attached to the gateway NSG.
-There is no SSH rule and no compute instance. The wedding root reads the subnet
-and NSG identifiers directly from this remote state.
+The PostgreSQL VM uses a separate private subnet with Bastion-only SSH access.
+Application roots read the shared network outputs from remote state.
 
 ## 4. Deploy the placeholder locally
 
@@ -126,7 +126,6 @@ Add these environment **secrets**:
 | `OCI_USER_OCID` | Dedicated automation user OCID |
 | `OCI_FINGERPRINT` | API signing key fingerprint |
 | `OCI_PRIVATE_KEY` | Entire PEM private key, including BEGIN/END lines |
-| `SHARED_DATABASE_ADMIN_PASSWORD` | Shared database ADMIN password; see [database setup](database.md) |
 
 Add these environment **variables**:
 
@@ -147,15 +146,15 @@ it must begin with `ocid1.certificate.` or `ocid1.apigatewaycertificate.`.
 
 ### Run the deployment
 
-1. Push the repository to GitHub.
-2. Open **Actions > Deploy OCI infrastructure > Run workflow**.
-3. On the first run, select `apply=true`. A plan-only first run cannot read the
-   shared state because it does not exist yet.
-4. Approve the `production` environment deployment if protection is enabled.
-5. The workflow applies shared networking first, then plans and applies the
-   wedding site using the newly written shared state.
-6. For later reviews, run with `apply=false`; run again with `apply=true` after
-   checking the plan log.
+1. Bootstrap networking and configure the environment variables and IAM described
+   in [database setup](database.md).
+2. Push the repository to GitHub.
+3. Open **Actions > Deploy OCI infrastructure > Run workflow**.
+4. Choose the intended target (`shared`, `personal-os`, `wedding`, or `all`) and
+   run with `apply=false` to review the plan.
+5. Run with `apply=true` after checking the plan log; approve any configured
+   production environment protection.
+6. Verify PostgreSQL bootstrap and its first actual off-VM backup after applying.
 
 Pull requests and pushes to `main` also run formatting and provider-schema
 validation without receiving OCI credentials. Applies are intentionally manual;

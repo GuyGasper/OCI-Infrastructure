@@ -87,8 +87,20 @@ resource "oci_core_security_list" "bastion" {
     stateless        = false
     description      = "Bastion port forwarding to the private database"
     tcp_options {
-      min = 1521
-      max = 1521
+      min = 5432
+      max = 5432
+    }
+  }
+
+  egress_security_rules {
+    protocol         = "6"
+    destination      = var.database_subnet_cidr
+    destination_type = "CIDR_BLOCK"
+    stateless        = false
+    description      = "Bastion port forwarding to private VM SSH"
+    tcp_options {
+      min = 22
+      max = 22
     }
   }
 
@@ -139,8 +151,8 @@ resource "oci_core_network_security_group_security_rule" "database_bastion" {
   description               = "Database administration from the managed Bastion private endpoint"
   tcp_options {
     destination_port_range {
-      min = 1521
-      max = 1521
+      min = 5432
+      max = 5432
     }
   }
 }
@@ -150,7 +162,20 @@ output "database_bastion_id" {
   value       = local.bastion_enabled ? oci_bastion_bastion.database[0].id : null
 }
 
-output "database_private_ip" {
-  description = "Private database IP to use as the Bastion port-forwarding target on port 1521."
-  value       = oci_database_autonomous_database.shared.private_endpoint_ip
+
+resource "oci_core_network_security_group_security_rule" "database_bastion_ssh" {
+  count                     = local.bastion_enabled ? 1 : 0
+  network_security_group_id = oci_core_network_security_group.database.id
+  direction                 = "INGRESS"
+  protocol                  = "6"
+  source                    = "${oci_bastion_bastion.database[0].private_endpoint_ip_address}/32"
+  source_type               = "CIDR_BLOCK"
+  stateless                 = false
+  description               = "VM SSH administration from the Bastion private endpoint only"
+  tcp_options {
+    destination_port_range {
+      min = 22
+      max = 22
+    }
+  }
 }

@@ -1,16 +1,13 @@
-region         = "us-chicago-1"
-compartment_id = "ocid1.compartment.oc1..replace_me"
-
-# Paid Autonomous Transaction Processing with a private endpoint.
-database_name         = "sharedapps"
-database_ecpu_count   = 2
-database_storage_gb   = 20
-database_subnet_cidr  = "10.20.80.0/24"
-database_client_cidrs = ["10.20.30.0/24"]
-# Supply database_admin_password via TF_VAR_database_admin_password, not this file.
-
-# Enable after Personal OS creates the existing VCN service gateway.
-# Replace with your current public IPv4 /32; [] leaves Bastion disabled.
-bastion_client_cidrs = []
-# bastion_client_cidrs = ["203.0.113.10/32"]
-bastion_subnet_cidr = "10.20.90.0/28"
+region                       = "us-ashburn-1"
+compartment_id               = "ocid1.compartment.oc1..replace_me"
+tenancy_id                   = "ocid1.tenancy.oc1..replace_me"
+postgres_availability_domain = "replace_me:US-ASHBURN-AD-1"
+# Pin Canonical Ubuntu 24.04 aarch64, not an OKE worker image.
+postgres_image_id       = "ocid1.image.oc1.iad.replace_me"
+postgres_ssh_public_key = "ssh-ed25519 REPLACE_WITH_YOUR_PUBLIC_KEY"
+database_subnet_cidr    = "10.20.80.0/24"
+database_client_cidrs   = ["10.20.30.0/24"]
+bastion_client_cidrs    = [] # ["your-public-ip/32"] enables temporary management access
+bastion_subnet_cidr     = "10.20.90.0/28"
+# Only for the stopped Oracle resource left by the cancelled apply:
+# legacy_autonomous_database_id = "ocid1.autonomousdatabase.oc1.iad.replace_me"

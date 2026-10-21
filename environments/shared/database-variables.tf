@@ -1,76 +1,59 @@
-variable "database_admin_password" {
-  description = "ADMIN password, supplied through TF_VAR_database_admin_password or a deployment secret. Stored in Terraform state; never use ADMIN as an application user."
+variable "tenancy_id" {
+  description = "Tenancy OCID for the backup instance-principal dynamic group and IAM policy."
   type        = string
-  sensitive   = true
-  nullable    = false
-
-  validation {
-    condition = (
-      length(var.database_admin_password) >= 12 &&
-      length(var.database_admin_password) <= 30 &&
-      can(regex("[A-Z]", var.database_admin_password)) &&
-      can(regex("[a-z]", var.database_admin_password)) &&
-      can(regex("[0-9]", var.database_admin_password)) &&
-      !strcontains(var.database_admin_password, "\"") &&
-      !strcontains(lower(var.database_admin_password), "admin")
-    )
-    error_message = "Use 12-30 characters with uppercase, lowercase, and a number; omit double quotes and the word admin."
-  }
 }
 
-variable "database_name" {
-  description = "Database name, unique within the tenancy and region."
+variable "postgres_availability_domain" {
+  description = "Availability domain for the VM and its persistent data volume."
   type        = string
-  default     = "sharedapps"
+}
 
+variable "postgres_image_id" {
+  description = "Pinned Canonical Ubuntu 24.04 ARM64 platform image OCID in this region."
+  type        = string
   validation {
-    condition     = can(regex("^[A-Za-z][A-Za-z0-9]{0,29}$", var.database_name))
-    error_message = "Use up to 30 alphanumeric characters, starting with a letter."
+    condition     = startswith(var.postgres_image_id, "ocid1.image.")
+    error_message = "Supply a real, pinned Ubuntu 24.04 ARM64 image OCID."
   }
 }
 
-variable "database_ecpu_count" {
-  description = "Provisioned ECPUs for the paid serverless database; autoscaling is disabled."
-  type        = number
-  default     = 2
-
+variable "postgres_ssh_public_key" {
+  description = "SSH public key for ubuntu administration through Bastion; never supply the private key."
+  type        = string
   validation {
-    condition     = var.database_ecpu_count >= 2 && floor(var.database_ecpu_count) == var.database_ecpu_count
-    error_message = "Provision at least 2 ECPUs, in whole increments."
-  }
-}
-
-variable "database_storage_gb" {
-  description = "Provisioned database storage in GB; storage autoscaling is disabled."
-  type        = number
-  default     = 20
-
-  validation {
-    condition     = var.database_storage_gb >= 20 && floor(var.database_storage_gb) == var.database_storage_gb
-    error_message = "Provision at least 20 GB of storage, in whole increments."
+    condition     = can(regex("^ssh-(ed25519|rsa) [A-Za-z0-9+/=]+( .*)?$", trimspace(var.postgres_ssh_public_key)))
+    error_message = "Supply an OpenSSH ed25519 or RSA public key on one line."
   }
 }
 
 variable "database_subnet_cidr" {
-  description = "Dedicated private database subnet in the shared VCN; must not overlap existing subnets."
+  description = "Dedicated private database subnet in the shared VCN."
   type        = string
   default     = "10.20.80.0/24"
-
   validation {
-    condition     = can(cidrnetmask(var.database_subnet_cidr))
-    error_message = "Provide a valid IPv4 subnet CIDR."
+    condition     = can(cidrhost(var.database_subnet_cidr, 10)) && can(cidrnetmask(var.database_subnet_cidr))
+    error_message = "Provide an IPv4 subnet with room for host 10."
   }
 }
 
 variable "database_client_cidrs" {
-  description = "Worker source CIDRs permitted to connect over TLS. Both app pools currently use 10.20.30.0/24."
+  description = "Worker source CIDRs allowed to connect using PostgreSQL TLS. Both app pools use 10.20.30.0/24."
   type        = set(string)
   default     = ["10.20.30.0/24"]
-
   validation {
     condition = length(var.database_client_cidrs) > 0 && alltrue([
       for cidr in var.database_client_cidrs : can(cidrnetmask(cidr)) && cidr != "0.0.0.0/0"
     ])
-    error_message = "Provide at least one IPv4 worker CIDR; access from 0.0.0.0/0 is not allowed."
+    error_message = "Provide IPv4 worker CIDRs; unrestricted public access is not allowed."
+  }
+}
+
+variable "legacy_autonomous_database_id" {
+  description = "Existing STOPPED Autonomous Database to import and preserve after the cancelled apply. Null for new installations. Never creates a replacement Oracle database."
+  type        = string
+  default     = null
+  validation {
+    condition     = var.legacy_autonomous_database_id == null ? true : startswith(var.legacy_autonomous_database_id, "ocid1.autonomousdatabase.")
+    error_message = "Use an existing Autonomous Database OCID, or null."
   }
 }
