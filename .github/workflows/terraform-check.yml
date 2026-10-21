@@ -58,11 +58,9 @@ jobs:
       - name: Test PostgreSQL TLS, isolation, and real backup restores
         run: |
           docker run --rm -e POSTGRES_INTEGRATION_CONTAINER=1 -v "$PWD:/repo:ro" ubuntu:24.04 bash -euc '
-            mkdir -p /etc/postgresql-common
-            echo create_main_cluster=false > /etc/postgresql-common/createcluster.conf
             apt-get update -qq
-            DEBIAN_FRONTEND=noninteractive apt-get install -y -qq postgresql-16 postgresql-client-16 python3 openssl > /tmp/install.log 2>&1 || { cat /tmp/install.log; exit 1; }
-            python3 /repo/scripts/test-postgres-integration.py
+            DEBIAN_FRONTEND=noninteractive apt-get install -y -qq python3 > /tmp/install.log 2>&1 || { cat /tmp/install.log; exit 1; }
+            python3 /repo/scripts/test-postgres-integration.py --install-dependencies
           '
 
       - name: Initialize wedding without backend

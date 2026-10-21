@@ -168,7 +168,9 @@ The hourly health unit fails if PostgreSQL is unavailable, disk use exceeds 80%,
 or no off-VM backup succeeded within 30 hours. Failures appear in systemd/journal;
 external email/push alerts are **not configured**. Monitor these units, configure
 notifications before relying on unattended operation, and check security updates
-and reboot requirements. Security package updates are enabled. Bootstrap script
+and reboot requirements. Security package updates are enabled. The backup process uses the official OCI
+Python SDK pinned in `/opt/shared-postgres-venv`; the bootstrap installer and
+SDK import are exercised by the Ubuntu integration test. Bootstrap script
 changes do not silently replace or reconfigure an existing VM: copy reviewed
 scripts/configuration through Bastion and rerun the service deliberately.
 Changes to worker/Bastion private source addresses must also update the guest

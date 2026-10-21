@@ -12,6 +12,8 @@ if os.environ.get('POSTGRES_INTEGRATION_CONTAINER') != '1' or not Path('/.docker
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'environments/shared/postgres'))
 import bootstrap
 import backup
+if '--install-dependencies' in sys.argv:
+    bootstrap.install_dependencies()
 config = {'private_ip': '127.0.0.2', 'worker_cidrs': ['10.20.30.0/24'], 'bastion_cidrs': ['10.20.90.2/32']}
 Path('/srv/postgres').mkdir(parents=True, exist_ok=True)
 original = bootstrap.run

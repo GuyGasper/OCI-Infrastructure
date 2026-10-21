@@ -241,6 +241,28 @@ def health(config):
     run('systemctl', 'reload', 'postgresql@16-main')
 
 
+def install_dependencies():
+    write('/etc/postgresql-common/createcluster.conf', 'create_main_cluster = false\n', 0o644)
+    env = dict(os.environ, DEBIAN_FRONTEND='noninteractive')
+    run('apt-get', 'update', env=env)
+    run('apt-get', 'install', '-y', 'postgresql-16', 'postgresql-client-16', 'openssl',
+        'python3-venv', 'iptables-persistent', 'unattended-upgrades', env=env)
+    # Ubuntu's ARM package repositories do not provide python3-oci. Use the
+    # official Oracle SDK from PyPI, isolated from system Python packages.
+    python = Path('/opt/shared-postgres-venv/bin/python3')
+    if not python.exists():
+        run('python3', '-m', 'venv', '/opt/shared-postgres-venv')
+    sdk_version = '2.189.0'
+    installed = subprocess.run([str(python), '-c', 'import oci; print(oci.__version__)'],
+                               capture_output=True, text=True)
+    if installed.returncode or installed.stdout.strip() != sdk_version:
+        run(str(python), '-m', 'pip', 'install', '--disable-pip-version-check',
+            '--index-url', 'https://pypi.org/simple', 'oci==' + sdk_version)
+    run(str(python), '-c', "import oci; assert oci.__version__ == '2.189.0'")
+    write('/etc/apt/apt.conf.d/20auto-upgrades',
+          'APT::Periodic::Update-Package-Lists "1";\nAPT::Periodic::Unattended-Upgrade "1";\n', 0o644)
+
+
 def main():
     if os.geteuid() != 0:
         raise SystemExit('Run as root')
@@ -249,17 +271,11 @@ def main():
         health(config)
         return
     mount_data()
-    write('/etc/postgresql-common/createcluster.conf', 'create_main_cluster = false\n', 0o644)
-    env = dict(os.environ, DEBIAN_FRONTEND='noninteractive')
-    run('apt-get', 'update', env=env)
-    run('apt-get', 'install', '-y', 'postgresql-16', 'postgresql-client-16', 'openssl',
-        'python3-oci', 'iptables-persistent', 'unattended-upgrades', env=env)
-    write('/etc/apt/apt.conf.d/20auto-upgrades',
-          'APT::Periodic::Update-Package-Lists \"1\";\nAPT::Periodic::Unattended-Upgrade \"1\";\n', 0o644)
+    install_dependencies()
     configure_server(config)
     configure_firewall(config)
-    install_timers()
     write(DATA / 'bootstrap-complete', 'PostgreSQL 16 ready; credentials are root-only.\n')
+    install_timers()
 
 
 if __name__ == '__main__':

@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/opt/shared-postgres-venv/bin/python3
 """Daily logical backup with actual SQL restore verification and remote readback."""
 import datetime
 import fcntl
