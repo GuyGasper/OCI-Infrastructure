@@ -8,3 +8,9 @@ database_storage_gb   = 20
 database_subnet_cidr  = "10.20.80.0/24"
 database_client_cidrs = ["10.20.30.0/24"]
 # Supply database_admin_password via TF_VAR_database_admin_password, not this file.
+
+# Enable after Personal OS creates the existing VCN service gateway.
+# Replace with your current public IPv4 /32; [] leaves Bastion disabled.
+bastion_client_cidrs = []
+# bastion_client_cidrs = ["203.0.113.10/32"]
+bastion_subnet_cidr = "10.20.90.0/28"

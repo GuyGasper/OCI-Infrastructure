@@ -29,7 +29,9 @@ Shared state also owns one paid Autonomous Transaction Processing database
 (2 ECPUs, 20 GB, autoscaling disabled), with a private endpoint in `10.20.80.0/24`.
 Both Java APIs can connect over TLS from their shared worker subnet; configure
 separate database users and namespace-local secrets. See [docs/database.md](docs/database.md)
-for deployment, credentials, and connection setup.
+for deployment, credentials, and connection setup. Optional
+[managed Bastion access](docs/bastion.md) lets SQL Developer on your PC connect
+through a temporary SSH tunnel, restricted to your configured public IPv4 /32.
 Already-created unused wedding endpoint/worker networking is retained for later
 cleanup. The retained placeholder uses the original API Gateway subnet and NSG.
 See [docs/personal-os.md](docs/personal-os.md) and

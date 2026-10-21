@@ -12,7 +12,10 @@ stateful NSG allow only TCP 1521 from `10.20.30.0/24`, the worker subnet used by
 both application pools. Existing worker TCP egress already permits this traffic.
 Flannel sends traffic outside its pod network through the workers, so the allow
 rule uses the worker CIDR. There is no public database endpoint and no inbound
-rule for Database Actions, APEX, or ORDS on 443. See Oracle's [private endpoint
+rule for Database Actions, APEX, or ORDS on 443. An optional managed Bastion
+provides local SQL Developer access through temporary SSH tunnels; its private
+endpoint has a separate /32 ingress rule on TCP 1521. See [Bastion setup](bastion.md).
+See Oracle's [private endpoint
 network requirements](https://docs.oracle.com/en-us/iaas/autonomous-database-serverless/doc/private-endpoints-autonomous.html).
 
 This provides access from the shared workers, not isolation between Kubernetes
@@ -57,8 +60,10 @@ state bucket, keep plans private, and do not upload them as CI artifacts. The
 password is never exported as a Terraform output. Keep the same secret available
 for subsequent shared plans; update it deliberately when rotating ADMIN.
 
-The plan should add the database, subnet, route table, security list, NSG, and
-TLS ingress rule. It must not replace existing networking or either OKE pool.
+With Bastion disabled, the plan should add the database, subnet, route table,
+security list, NSG, and TLS ingress rule (six resources). Enabling Bastion also
+adds its private subnet, route table, security list, managed Bastion, and database
+ingress rule (five more resources). It must not replace existing networking or either OKE pool.
 The database uses `prevent_destroy = true`: intentional replacement or teardown
 requires a separate reviewed change to remove that protection. Keep the resource
 block and shared state while either application uses this database; removing the
@@ -68,7 +73,9 @@ If subnet layouts change, update `database_client_cidrs` and
 `database_subnet_cidr` in the shared root's local tfvars, or add corresponding
 workflow environment inputs. Do not add a dependency on application state to the
 shared root. The current defaults work whether the database or cluster is
-created first. A new worker subnet must also have suitable outbound rules.
+created first when Bastion is disabled. When enabling Bastion, the existing
+OKE service gateway must already exist. A new worker subnet must also have
+suitable outbound rules.
 
 ## Connect both applications
 
@@ -91,7 +98,7 @@ the server certificate even though a client wallet is unnecessary. See Oracle's
 
 Use a current Oracle JDBC driver compatible with the Java runtime, with the
 standard trusted CA certificates. Connections must originate from an allowed
-worker, or from a deliberately configured private administration path into the
+worker, or through the [managed Bastion](bastion.md) administration path into the
 VCN. A developer laptop or GitHub-hosted runner has no direct access. The default
 NSG does not enable the web SQL console; use a SQL client from the permitted
 private network to perform administration.

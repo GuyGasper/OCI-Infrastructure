@@ -100,6 +100,7 @@ jobs:
           TF_VAR_database_name: ${{ vars.SHARED_DATABASE_NAME || 'sharedapps' }}
           TF_VAR_database_ecpu_count: ${{ vars.SHARED_DATABASE_ECPU_COUNT || '2' }}
           TF_VAR_database_storage_gb: ${{ vars.SHARED_DATABASE_STORAGE_GB || '20' }}
+          TF_VAR_bastion_client_cidrs: ${{ vars.SHARED_BASTION_CLIENT_CIDRS || '[]' }}
         run: terraform -chdir=environments/shared plan -out=shared.tfplan
 
       - name: Apply shared infrastructure
