@@ -1,4 +1,15 @@
+locals {
+  cluster_id = var.existing_cluster_id != null ? var.existing_cluster_id : oci_containerengine_cluster.this[0].id
+}
+
+# Preserve the existing cluster when introducing the optional shared-cluster mode.
+moved {
+  from = oci_containerengine_cluster.this
+  to   = oci_containerengine_cluster.this[0]
+}
+
 resource "oci_containerengine_cluster" "this" {
+  count              = var.existing_cluster_id == null ? 1 : 0
   compartment_id     = var.compartment_id
   name               = var.name
   vcn_id             = var.vcn_id
@@ -29,7 +40,7 @@ resource "oci_containerengine_cluster" "this" {
 
 resource "oci_containerengine_node_pool" "this" {
   compartment_id     = var.compartment_id
-  cluster_id         = oci_containerengine_cluster.this.id
+  cluster_id         = local.cluster_id
   name               = "${var.name}-workers"
   kubernetes_version = var.kubernetes_version
   node_shape         = var.node_shape
@@ -44,15 +55,25 @@ resource "oci_containerengine_node_pool" "this" {
   }
   node_config_details {
     size    = var.node_count
-    nsg_ids = [oci_core_network_security_group.this["workers"].id]
+    nsg_ids = [var.existing_worker_nsg_id != null ? var.existing_worker_nsg_id : oci_core_network_security_group.this["workers"].id]
     placement_configs {
       availability_domain = var.availability_domain
-      subnet_id           = oci_core_subnet.this["workers"].id
+      subnet_id           = var.existing_worker_subnet_id != null ? var.existing_worker_subnet_id : oci_core_subnet.this["workers"].id
     }
   }
   initial_node_labels {
     key   = "workload"
     value = var.name
+  }
+  lifecycle {
+    precondition {
+      condition     = (var.existing_worker_subnet_id == null) == (var.existing_worker_nsg_id == null)
+      error_message = "Provide both an existing worker subnet and its NSG, or neither."
+    }
+    precondition {
+      condition     = var.existing_cluster_id == null || (var.existing_worker_subnet_id != null && var.existing_worker_nsg_id != null)
+      error_message = "Joining an existing cluster requires its worker subnet and NSG so control-plane and overlay traffic are allowed."
+    }
   }
   depends_on = [oci_core_network_security_group_security_rule.worker_overlay_egress]
 }

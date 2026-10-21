@@ -17,6 +17,8 @@ spec:
       labels:
         app: sg-wedding-api
     spec:
+      nodeSelector:
+        workload: sg-wedding
       automountServiceAccountToken: false
       imagePullSecrets:
         - name: ocir-pull

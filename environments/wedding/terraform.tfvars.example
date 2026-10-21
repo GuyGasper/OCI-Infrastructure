@@ -11,6 +11,10 @@ node_image_id       = "ocid1.image.oc1.us-ashburn-1.replace_me"
 availability_domain = "REPLACE_WITH_AD_NAME"
 admin_cidrs         = ["203.0.113.10/32"] # Replace with your actual public IP.
 
+# Match kubernetes_version to the existing Personal OS control plane. Wedding
+# adds a node pool to that cluster; it does not provision another control plane.
+# admin_cidrs configures retained unused wedding endpoint rules only. The shared
+# API remains protected by Personal OS's admin_cidrs.
 # ARM64; both application images must support linux/arm64.
 node_shape      = "VM.Standard.A1.Flex"
 node_ocpus      = 1

@@ -107,8 +107,8 @@ locals {
     workers_internet  = { group = "workers", destination = "0.0.0.0/0", type = "CIDR_BLOCK", min = null, max = null }
     endpoint_workers  = { group = "endpoint", destination = var.worker_cidr, type = "CIDR_BLOCK", min = null, max = null }
     endpoint_services = { group = "endpoint", destination = one(data.oci_core_services.regional.services).cidr_block, type = "SERVICE_CIDR_BLOCK", min = null, max = null }
-    ingress_nodeport  = { group = "ingress", destination = var.worker_cidr, type = "CIDR_BLOCK", min = 30000, max = 32767 }
-    ingress_health    = { group = "ingress", destination = var.worker_cidr, type = "CIDR_BLOCK", min = 10256, max = 10256 }
+    ingress_nodeport  = { group = "ingress", destination = var.load_balancer_backend_cidr != null ? var.load_balancer_backend_cidr : var.worker_cidr, type = "CIDR_BLOCK", min = 30000, max = 32767 }
+    ingress_health    = { group = "ingress", destination = var.load_balancer_backend_cidr != null ? var.load_balancer_backend_cidr : var.worker_cidr, type = "CIDR_BLOCK", min = 10256, max = 10256 }
   }
 }
 

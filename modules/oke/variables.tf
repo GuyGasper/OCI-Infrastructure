@@ -1,6 +1,26 @@
 variable "compartment_id" { type = string }
 variable "vcn_id" { type = string }
 variable "public_route_table_id" { type = string }
+variable "existing_cluster_id" {
+  description = "Join this cluster instead of creating another control plane. The caller owns its lifecycle."
+  type        = string
+  default     = null
+}
+variable "existing_worker_subnet_id" {
+  description = "Existing worker subnet for a node pool joining a shared cluster."
+  type        = string
+  default     = null
+}
+variable "existing_worker_nsg_id" {
+  description = "Existing worker NSG for a node pool joining a shared cluster."
+  type        = string
+  default     = null
+}
+variable "load_balancer_backend_cidr" {
+  description = "Worker CIDR reached by this load balancer; defaults to the module's worker subnet."
+  type        = string
+  default     = null
+}
 variable "private_route_table_id" {
   description = "Existing worker egress route table in this VCN. When set, reuse it instead of creating NAT/service gateways."
   type        = string

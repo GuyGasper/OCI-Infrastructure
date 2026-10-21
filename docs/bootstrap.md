@@ -205,6 +205,6 @@ hostname before adding the final A record avoids a certificate-name failure.
   generally a better fit for a multi-asset SPA; retain API Gateway for APIs.
 - Add budgets, logging, alarms, and a WAF/rate-limit policy before collecting
   RSVPs or other personal data.
-- Personal OS uses a separate OKE cluster with private workers and dedicated
-  endpoint/load balancer subnets in the shared VCN. See
-  [docs/personal-os.md](personal-os.md) for its deployment and TLS setup.
+- Personal OS owns the OKE cluster shared with SG-Wedding. Each app has its
+  own worker pool, namespace, HTTPS load balancer, and TLS secret. See
+  [docs/personal-os.md](personal-os.md) and [docs/sg-wedding.md](sg-wedding.md).

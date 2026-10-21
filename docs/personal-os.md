@@ -6,6 +6,12 @@ Kubernetes; it does not create a static Object Storage site or API Gateway. The
 application load balancer and TLS listener are created by the Kubernetes Service
 after the cluster and application images are ready.
 
+This environment also owns the shared OKE control plane and private worker
+network used by SG-Wedding. Wedding adds its own managed worker pool to this
+cluster, with its own namespace, load balancer, certificate, and image
+repositories. The OCI cluster keeps its existing `personal-os` name and state
+ownership; it is not renamed or recreated.
+
 ## Architecture
 
 ```text
@@ -20,7 +26,8 @@ The default is OKE Basic with one `VM.Standard.A1.Flex` managed worker (1 OCPU,
 6 GiB RAM, 50 GiB boot volume). This is a development setup: node failure and
 maintenance can interrupt service. Both application images must support
 `linux/arm64`. Change the flex shape, matching image, CPU, and memory together
-if you need x86. The load balancer is capped at 10 Mbps initially. Check tenancy
+if you need x86. The load balancer has a 10 Mbps minimum and can scale up to
+100 Mbps. Bandwidth beyond the minimum can incur usage charges. Check tenancy
 quotas, regional A1 capacity, and current pricing; this configuration does not
 guarantee an Always Free deployment. Compute, storage, and the load balancer can
 incur charges. Increase node CPU/memory if system pods or rollouts cannot fit.
@@ -40,12 +47,17 @@ inbound SSH rule. Flannel overlay pods use `10.244.0.0/16`, and services use
 Flannel configuration does not enforce Kubernetes NetworkPolicies. The Java
 Service is internal, but reachable by other pods in this cluster.
 
-SG-Wedding can reuse this environment's private outbound route, NAT gateway,
-and service gateway while running its own cluster in separate subnets. See
-[docs/sg-wedding.md](sg-wedding.md). Do not tear down Personal OS networking
-while wedding depends on that route. The optional route reuse added to the OKE
-module includes `moved` blocks for the existing Personal OS gateways and private
-route table; a plan must preserve those resources rather than replace them.
+SG-Wedding reuses the control plane, worker subnet/NSG, private outbound route,
+NAT gateway, and service gateway. See [docs/sg-wedding.md](sg-wedding.md). Do not
+tear down this cluster or its networking while wedding depends on it. The
+module's `moved` blocks preserve the existing cluster, gateways, and private
+route table when enabling reuse; a plan must not replace those resources.
+
+Personal OS app pods select nodes labeled `workload=personal-os`; wedding pods
+select `workload=sg-wedding`. With both pools at their default size, there are
+two running workers total, each with 1 OCPU and 6 GiB RAM. Keeping both workers
+running consumes both allocations even when one app is idle. These scheduling
+rules separate compute usage, but do not provide Kubernetes network isolation.
 
 ## OCI prerequisites
 
@@ -200,6 +212,13 @@ hashing rolls out the frontend when Nginx configuration changes.
 Kubernetes owns the load balancer; Terraform owns its subnet/security rules.
 Do not edit the generated listener/backends manually in OCI. Only 443 is exposed;
 HTTP-to-HTTPS redirection on port 80 is not configured initially.
+
+The 10-100 Mbps bandwidth settings are Service annotations. An infrastructure
+Terraform apply alone does not update an existing load balancer: deploy the
+rendered application manifests using the current published image references to
+apply the new range. Keep the minimum and maximum explicit so defaults do not
+change during Kubernetes upgrades. See Oracle's
+[bandwidth settings and billing](https://docs.oracle.com/en-us/iaas/Content/Balance/Tasks/managingloadbalancer_topic-Creating_Load_Balancers.htm).
 
 ## Verification and DNS cutover
 

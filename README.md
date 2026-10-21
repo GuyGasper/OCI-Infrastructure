@@ -2,8 +2,10 @@
 
 Terraform for shared OCI foundations and independently deployed applications.
 
-Personal OS and SG-Wedding each have an OKE cluster for a Java API and React/Nginx
-frontend, private OCIR repositories, and a Kubernetes-managed HTTPS load balancer.
+Personal OS and SG-Wedding share one OKE Basic cluster, with a managed worker
+pool and namespace per application. Each app has a Java API and React/Nginx
+frontend, private OCIR repositories, and its own HTTPS load balancer and TLS secret.
+Load balancers use a flexible 10 Mbps minimum and 100 Mbps maximum.
 The existing wedding Object Storage/API Gateway placeholder remains until the
 new application and DNS cutover are verified. See [docs/bootstrap.md](docs/bootstrap.md)
 for the original state/backend bootstrap.
@@ -12,17 +14,19 @@ for the original state/backend bootstrap.
 
 - `modules/network`: reusable VCN, public API Gateway subnet, and NSG.
 - `modules/static-site`: Object Storage object plus an API Gateway deployment.
-- `modules/oke`: OKE Basic cluster, managed workers, dedicated subnets, and routing.
+- `modules/oke`: OKE Basic cluster creation/reuse, managed workers, subnets, and routing.
 - `environments/shared`: account-level networking shared by multiple projects.
 - `environments/wedding`: SG-Wedding OKE infrastructure, repositories, and retained placeholder.
 - `environments/personal-os`: Personal OS OKE infrastructure and private container repositories.
 - `kubernetes/personal-os`: Java API, React/Nginx frontend, and HTTPS load balancer manifests.
 - `kubernetes/sg-wedding`: separate wedding application and HTTPS load balancer manifests.
 
-Each environment has separate Terraform state. Both clusters use the existing
-shared VCN with distinct endpoint, worker, and load balancer subnets. Wedding
-reuses the existing private outbound route, NAT gateway, and service gateway
-owned by Personal OS. The retained placeholder uses the original API Gateway
-subnet and NSG. See [docs/personal-os.md](docs/personal-os.md) and
+Each environment has separate Terraform state. Personal OS owns the shared
+cluster and private worker network in the existing VCN. Wedding reads that
+cluster ID from Personal OS state and adds its own worker pool in the same
+worker subnet/NSG; its HTTPS load balancer keeps a separate subnet and NSG.
+Already-created unused wedding endpoint/worker networking is retained for later
+cleanup. The retained placeholder uses the original API Gateway subnet and NSG.
+See [docs/personal-os.md](docs/personal-os.md) and
 [docs/sg-wedding.md](docs/sg-wedding.md) for deployment, application image
 contracts, TLS, and DNS cutover.

@@ -17,6 +17,8 @@ spec:
       labels:
         app: personal-os-api
     spec:
+      nodeSelector:
+        workload: personal-os
       automountServiceAccountToken: false
       imagePullSecrets:
         - name: ocir-pull
