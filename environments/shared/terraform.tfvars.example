@@ -9,5 +9,3 @@ database_subnet_cidr    = "10.20.80.0/24"
 database_client_cidrs   = ["10.20.30.0/24"]
 bastion_client_cidrs    = [] # ["your-public-ip/32"] enables temporary management access
 bastion_subnet_cidr     = "10.20.90.0/28"
-# Only for the stopped Oracle resource left by the cancelled apply:
-# legacy_autonomous_database_id = "ocid1.autonomousdatabase.oc1.iad.replace_me"

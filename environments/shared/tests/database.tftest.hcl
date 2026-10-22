@@ -55,10 +55,9 @@ run "dedicated_small_private_vm" {
       oci_core_volume_attachment.postgres.volume_id == oci_core_volume.postgres.id &&
       oci_core_volume_attachment.postgres.instance_id == oci_core_instance.postgres.id &&
       oci_core_volume_attachment.postgres.device == "/dev/oracleoci/oraclevdb" &&
-      oci_core_volume_attachment.postgres.is_pv_encryption_in_transit_enabled &&
-      length(oci_database_autonomous_database.legacy) == 0
+      oci_core_volume_attachment.postgres.is_pv_encryption_in_transit_enabled
     )
-    error_message = "Data must persist independently on an encrypted 50-GB balanced volume; never create a new paid Autonomous Database."
+    error_message = "Data must persist independently on an encrypted 50-GB balanced volume."
   }
   assert {
     condition = (

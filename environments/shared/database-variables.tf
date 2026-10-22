@@ -47,13 +47,3 @@ variable "database_client_cidrs" {
     error_message = "Provide IPv4 worker CIDRs; unrestricted public access is not allowed."
   }
 }
-
-variable "legacy_autonomous_database_id" {
-  description = "Existing STOPPED Autonomous Database to import and preserve after the cancelled apply. Null for new installations. Never creates a replacement Oracle database."
-  type        = string
-  default     = null
-  validation {
-    condition     = var.legacy_autonomous_database_id == null ? true : startswith(var.legacy_autonomous_database_id, "ocid1.autonomousdatabase.")
-    error_message = "Use an existing Autonomous Database OCID, or null."
-  }
-}

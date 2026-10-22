@@ -105,12 +105,7 @@ jobs:
           TF_VAR_postgres_ssh_public_key: ${{ vars.SHARED_POSTGRES_SSH_PUBLIC_KEY }}
           TF_VAR_postgres_availability_domain: ${{ vars.SHARED_POSTGRES_AVAILABILITY_DOMAIN || vars.PERSONAL_OS_AVAILABILITY_DOMAIN }}
           TF_VAR_bastion_client_cidrs: ${{ vars.SHARED_BASTION_CLIENT_CIDRS || '[]' }}
-          TF_VAR_legacy_autonomous_database_id: ${{ vars.SHARED_LEGACY_AUTONOMOUS_DATABASE_ID || 'null' }}
-        run: |
-          if [ "$TF_VAR_legacy_autonomous_database_id" = null ]; then
-            unset TF_VAR_legacy_autonomous_database_id
-          fi
-          terraform -chdir=environments/shared plan -out=shared.tfplan
+        run: terraform -chdir=environments/shared plan -out=shared.tfplan
 
       - name: Apply shared infrastructure
         if: ${{ inputs.apply && (inputs.target == 'shared' || inputs.target == 'all') }}

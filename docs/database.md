@@ -11,8 +11,7 @@ Budget approximately **$20–25/month before tax**, assuming full paid pricing,
 usage-based Object Storage charges. Free allowances may reduce actual charges,
 but are not assumed. Existing OKE, NAT, and service gateways are reused. Bastion
 has no service charge. This is one server: maintenance or failure causes downtime.
-This estimate excludes the stopped legacy Oracle database's remaining storage
-and backup charges. See [OCI compute pricing](https://www.oracle.com/cloud/compute/pricing/),
+See [OCI compute pricing](https://www.oracle.com/cloud/compute/pricing/),
 [block volume pricing](https://www.oracle.com/cloud/storage/block-volumes/pricing/),
 and [Object Storage pricing](https://www.oracle.com/cloud/storage/object-storage/pricing/).
 
@@ -36,7 +35,6 @@ Allow group TerraformDeployers to manage instance-family in compartment <compart
 Allow group TerraformDeployers to manage volume-family in compartment <compartment>
 Allow group TerraformDeployers to manage object-family in compartment <compartment>
 Allow group TerraformDeployers to manage bastion-family in compartment <compartment>
-Allow group TerraformDeployers to read autonomous-database-family in compartment <compartment>
 Allow group TerraformDeployers to manage dynamic-groups in tenancy
 Allow group TerraformDeployers to manage policies in tenancy
 ```
@@ -55,7 +53,6 @@ Set these GitHub **production environment variables**:
 | `SHARED_POSTGRES_SSH_PUBLIC_KEY` | Contents of `/home/gasperg/.ssh/id_ed25519.pub`; public key only |
 | `SHARED_POSTGRES_AVAILABILITY_DOMAIN` | VM/data volume AD; falls back to `PERSONAL_OS_AVAILABILITY_DOMAIN` |
 | `SHARED_BASTION_CLIENT_CIDRS` | Existing JSON array of this PC's public IPv4 /32 |
-| `SHARED_LEGACY_AUTONOMOUS_DATABASE_ID` | OCID of the stopped database left by the cancelled apply; keep set until approved cleanup |
 
 The values selected for this installation are saved locally in the ignored
 `.local/shared-postgres-github-variables.json`. They contain the approved WSL
@@ -65,9 +62,7 @@ this PC. The existing `OCI_TENANCY_OCID` secret supplies the backup IAM tenancy.
 `SHARED_DATABASE_ECPU_COUNT`, and `SHARED_DATABASE_STORAGE_GB` are no longer used.
 
 Run **Deploy OCI infrastructure**, target `shared`, with `apply=false`, then
-review and run with `apply=true`. After recovery imports for the cancelled run,
-the expected plan is **12 additions, 3 updates, 0 deletions**. The updates change
-the existing database route table, worker database port, and Bastion egress rules.
+review and run with `apply=true`. With shared PostgreSQL already deployed, the expected plan is **no changes**.
 The original shared gateway network and application pools must not be replaced.
 Do not cancel an apply after OCI has accepted a resource creation request;
 OCI creation can continue after the runner stops.
@@ -185,9 +180,8 @@ on the same server does not replace a periodic full disaster-recovery exercise.
 
 ## Recovering and removing resources
 
-The VM, persistent data volume, backup bucket, and retained Oracle database use
-`prevent_destroy`. Keep their resource blocks; removing a block also removes
-its lifecycle protection. Image/AD changes that replace the VM require a reviewed
+The VM, persistent data volume, and backup bucket use `prevent_destroy`. Keep
+their resource blocks; removing a block also removes its lifecycle protection. Image/AD changes that replace the VM require a reviewed
 recovery/migration change. Keep the data volume independently of the boot disk.
 
 For logical recovery, stop application writes, fetch a known-good archive using
@@ -201,10 +195,10 @@ live databases until the chosen restore has been verified independently. A new
 empty server can be bootstrapped and its generated credentials replaced with
 the archived credentials after the archived roles/databases are restored.
 
-The cancelled apply's unused Autonomous Database is imported as
-`oci_database_autonomous_database.legacy[0]` and must remain **STOPPED**. Its
-configuration ignores updates and refuses deletion. It is never recreated by
-the PostgreSQL path. Keep `SHARED_LEGACY_AUTONOMOUS_DATABASE_ID` set on every plan;
-unsetting it is blocked by destroy protection. Removing the remaining Oracle
-storage/backup charges requires separately approved termination and a reviewed
-Terraform cleanup. Do not restart that database while testing PostgreSQL.
+The unused Autonomous Database from the cancelled apply was retired in favor of
+PostgreSQL. Its resource, import, and legacy variable are removed from shared
+configuration. Remove the obsolete `SHARED_LEGACY_AUTONOMOUS_DATABASE_ID`
+production environment variable if it remains in GitHub; the workflow no longer
+reads it. The old Oracle ADMIN password secret and Oracle database sizing/name
+variables are also unused and can be removed. PostgreSQL and Bastion continue
+to use their existing shared private networking.

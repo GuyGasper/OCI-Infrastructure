@@ -29,8 +29,7 @@ Shared state also owns a private PostgreSQL 16 VM (A1, 1 OCPU, 6 GB RAM,
 50 GB boot and 50 GB persistent data storage), with separate databases and users
 for both apps and daily verified backups to private Object Storage. Budget about
 $20–25/month at full paid rates. See [docs/database.md](docs/database.md) for
-prerequisites, deployment, secrets, backup limits, and the retained stopped Oracle
-database. Optional [managed Bastion access](docs/bastion.md) provides temporary
+prerequisites, deployment, secrets, and backup limits. Optional [managed Bastion access](docs/bastion.md) provides temporary
 SSH/database tunnels restricted to your configured public IPv4 /32.
 Already-created unused wedding endpoint/worker networking is retained for later
 cleanup. The retained placeholder uses the original API Gateway subnet and NSG.
