@@ -1,0 +1,87 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: personal-os-strava-sync
+spec:
+  schedule: "17 * * * *"
+  timeZone: Etc/UTC
+  # Enable only after the API migration and Strava credentials are installed.
+  suspend: true
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 600
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 1800
+      ttlSecondsAfterFinished: 86400
+      template:
+        metadata:
+          labels:
+            app: personal-os-strava-sync
+        spec:
+          restartPolicy: Never
+          nodeSelector:
+            workload: personal-os
+          automountServiceAccountToken: false
+          imagePullSecrets:
+            - name: ocir-pull
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            fsGroup: 10001
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: strava-sync
+              image: personal-os-api:replace-me
+              args: ["--spring.profiles.active=strava-sync"]
+              envFrom:
+                - secretRef:
+                    name: strava-sync-credentials
+              env:
+                - name: JDBC_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: database-credentials
+                      key: JDBC_URL
+                - name: DB_USERNAME
+                  valueFrom:
+                    secretKeyRef:
+                      name: database-credentials
+                      key: DB_USERNAME
+                - name: DB_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: database-credentials
+                      key: DB_PASSWORD
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+                limits:
+                  cpu: "1"
+                  memory: 512Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: [ALL]
+              volumeMounts:
+                - name: database-ca
+                  mountPath: /etc/database
+                  readOnly: true
+                - name: tmp
+                  mountPath: /tmp
+          volumes:
+            - name: database-ca
+              secret:
+                secretName: database-credentials
+                items:
+                  - key: DB_SSL_ROOT_CERT
+                    path: root.crt
+            - name: tmp
+              emptyDir:
+                sizeLimit: 128Mi

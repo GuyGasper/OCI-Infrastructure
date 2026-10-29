@@ -4,6 +4,7 @@ namespace: personal-os
 resources:
   - namespace.yaml
   - api.yaml
+  - strava-sync.yaml
   - frontend.yaml
   - load-balancer.yaml
 configMapGenerator:

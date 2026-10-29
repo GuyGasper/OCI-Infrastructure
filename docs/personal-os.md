@@ -252,3 +252,29 @@ and mounts the public CA at `/etc/database/root.crt` for `sslmode=verify-full`.
 The optional secret supports the transition; database-dependent API images must
 validate configuration at startup and use the PostgreSQL JDBC driver. Application
 code and schema migrations are maintained in the application repository.
+
+## Optional hourly Strava sync
+
+`kubernetes/personal-os/strava-sync.yaml` defines a suspended hourly CronJob
+(minute 17, UTC) on the Personal OS worker pool. It uses the same API image with
+`--spring.profiles.active=strava-sync`, runs once without an HTTP server and reads
+the namespace-local `strava-sync-credentials` and `database-credentials` Secrets.
+It has a read-only root, no service-account token, the database CA mount, a
+100m CPU / 256Mi request, a 30-minute deadline, no immediate retries and
+`concurrencyPolicy: Forbid`. The application also takes a database advisory lock.
+
+The API optionally reads `STRAVA_READ_TOKEN`, `STRAVA_WEBHOOK_TOKEN` and
+`STRAVA_WEBHOOK_SUBSCRIPTION_ID` from `strava-api-credentials`; it receives no
+Strava OAuth credentials or token-encryption key. Missing private read credentials
+disable the personal-data endpoints. Deploy the API migration before enabling
+the worker. Keep the CronJob suspended until OAuth, webhook registration and a
+manual import succeed.
+
+The renderer replaces `personal-os-api` in both workloads. Reapplying the
+infrastructure base restores `suspend:true`; normal application image promotion
+preserves the current suspension. The application deployment can also promote
+the CronJob with production variable `STRAVA_SYNC_ENABLED=true` after installing
+its expanded deployer Role.
+
+See [Personal-OS Strava setup](../../Personal-OS/docs/strava.md) for private
+credential installation, backfill limits, API contracts and recovery.
