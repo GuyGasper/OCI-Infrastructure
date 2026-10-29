@@ -256,7 +256,7 @@ code and schema migrations are maintained in the application repository.
 ## Optional hourly Strava sync
 
 `kubernetes/personal-os/strava-sync.yaml` defines a suspended hourly CronJob
-(minute 17, UTC) on the Personal OS worker pool. It uses the same API image with
+(minute 0, UTC) on the Personal OS worker pool. It uses the same API image with
 `--spring.profiles.active=strava-sync`, runs once without an HTTP server and reads
 the namespace-local `strava-sync-credentials` and `database-credentials` Secrets.
 It has a read-only root, no service-account token, the database CA mount, a

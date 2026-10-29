@@ -3,7 +3,7 @@ kind: CronJob
 metadata:
   name: personal-os-strava-sync
 spec:
-  schedule: "17 * * * *"
+  schedule: "0 * * * *"
   timeZone: Etc/UTC
   # Enable only after the API migration and Strava credentials are installed.
   suspend: true
