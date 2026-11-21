@@ -40,6 +40,9 @@ spec:
               value: "-XX:MaxRAMPercentage=75.0 -Djava.io.tmpdir=/tmp"
           envFrom:
             - secretRef:
+                name: rsvp-spotify-credentials
+                optional: true
+            - secretRef:
                 name: database-credentials
                 optional: true
           resources:
